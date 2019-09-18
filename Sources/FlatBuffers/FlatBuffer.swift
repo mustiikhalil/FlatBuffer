@@ -117,7 +117,7 @@ struct FlatBuffer {
     #endif
 }
 
-func pointer<T>(c: T) -> UnsafeMutablePointer<T> {
+func pointer<T: Scaler>(c: T) -> UnsafeMutablePointer<T> {
     let p = UnsafeMutablePointer<T>.allocate(capacity: MemoryLayout<T>.size)
     p.initialize(to: c)
     return p

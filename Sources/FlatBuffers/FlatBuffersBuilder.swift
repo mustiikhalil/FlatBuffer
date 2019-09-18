@@ -82,8 +82,6 @@ extension FlatBuffersBuilder {
         _bb.write(pointer: pointer(c: Int32(_bb.size) - Int32(vTableOffset)),
                   len: size,
                   index: Int(_bb.size - vTableOffset) + size)
-        
-        debug()
         isNested = false
         return 0
     }
@@ -150,7 +148,7 @@ extension FlatBuffersBuilder {
     ///
     /// - Parameter offset:
     /// - Parameter position:
-    func add<T: Scaler>(offset: Offset<T>, at position: VOffset) {
+    func add<T>(offset: Offset<T>, at position: VOffset) {
         if offset.isNull { return }
         add(element: refer(to: offset.o), def: 0, at: position)
     }
@@ -173,13 +171,16 @@ extension FlatBuffersBuilder {
         preAlign(len: Int32(len) + 1, type: UOffset.self)
         _bb.fill(padding: 1)
         _bb.push(string: str, len: len)
-        _bb.push(value: UOffset(len), len: MemoryLayout.size(ofValue: UOffset(len)))
+        push(element: UOffset(len))
         return Offset(offset: _bb.size)
     }
     
     ///
     /// - Parameter element:
+    @discardableResult
     fileprivate func push<T: Scaler>(element: T) -> UOffset {
+        preAlign(len: Int32(MemoryLayout<T>.size),
+                 alignment: Int32(MemoryLayout<T>.size))
         _bb.push(value: element, len: MemoryLayout<T>.size)
         return _bb.size
     }
