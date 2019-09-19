@@ -179,9 +179,9 @@ extension FlatBuffersBuilder {
     /// - Parameter element:
     @discardableResult
     fileprivate func push<T: Scaler>(element: T) -> UOffset {
-        preAlign(len: Int32(MemoryLayout<T>.size),
-                 alignment: Int32(MemoryLayout<T>.size))
-        _bb.push(value: element, len: MemoryLayout<T>.size)
+        preAlign(len: Int32(MemoryLayout<T.NumaricValue>.size),
+                 alignment: Int32(MemoryLayout<T.NumaricValue>.size))
+        _bb.push(value: element, len: MemoryLayout<T.NumaricValue>.size)
         return _bb.size
     }
 }

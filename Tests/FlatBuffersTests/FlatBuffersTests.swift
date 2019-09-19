@@ -5,6 +5,8 @@ final class FlatBuffersTests: XCTestCase {
 
     let country = "Norway"
     
+    func testEndian() { print("endian test: ", CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue)) }
+    
     func testBuilderInit() {
         XCTAssertNotNil(FlatBuffersBuilder(initialSize: 1))
     }
@@ -17,6 +19,7 @@ final class FlatBuffersTests: XCTestCase {
         b.clear()
         XCTAssertEqual(b.create(string: helloWorld).o, 20)
         XCTAssertEqual(b.create(string: country).o, 32)
+        b.clear()
     }
     
     func testStartTable() {
@@ -25,6 +28,7 @@ final class FlatBuffersTests: XCTestCase {
         b.clear()
         XCTAssertEqual(b.create(string: country).o, 12)
         XCTAssertEqual(b.startTable(), 12)
+        b.clear()
     }
     
     func testCreateCountry() {
@@ -33,20 +37,33 @@ final class FlatBuffersTests: XCTestCase {
         // this comes from the CPP implementation without the finish()
         let v: [UInt8] = [10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 12, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
         XCTAssertEqual(b.sizedArray, v)
+        b.clear()
     }
-    
-    func testFetchCountry() {
-        // this comes from the CPP implementation
-        let bb: [UInt8] = [16, 0, 0, 0, 0, 0, 10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 12, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
-        _ = Country.getRootAsCountry(FlatBuffer(bytes: bb))
-    }
-    
+        
     func testCreateCountryDouble() {
         var b = FlatBuffersBuilder(initialSize: 16)
         _ = CountryDouble.createCountry(builder: &b, name: country, log: 200, lan: 100)
         // this comes from the CPP implementation without the finish()
         let v: [UInt8] = [10, 0, 28, 0, 4, 0, 8, 0, 16, 0, 10, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 89, 64, 0, 0, 0, 0, 0, 0, 105, 64, 0, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0,]
         XCTAssertEqual(b.sizedArray, v)
+        b.clear()
+    }
+    
+    func testFetchLanCountry() {
+        // this comes from the CPP implementation
+        let bb: [UInt8] = [16, 0, 0, 0, 0, 0, 10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 12, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
+        var b = FlatBuffer(bytes: bb)
+        let country = Country.getRootAsCountry(b)
+        XCTAssertEqual(100, country.lan)
+        b.clear()
+    }
+    
+    func testFetchLanCountryDouble() {
+        let bb: [UInt8] = [16, 0, 0, 0, 0, 0, 10, 0, 28, 0, 4, 0, 8, 0, 16, 0, 10, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 89, 64, 0, 0, 0, 0, 0, 0, 105, 64, 0, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
+        var b = FlatBuffer(bytes: bb)
+        let country = CountryDouble.getRootAsCountry(b)
+        XCTAssertEqual(100.0, country.lan)
+        b.clear()
     }
 }
 
@@ -110,7 +127,7 @@ struct CountryDouble {
     
     public var lan: Double { get {
         let o = table.offset(Int32(Country.offsets.lan))
-        return o != 0 ? Double(table._bb.read(def: Double.self, position: Int(o + table._postion), with: MemoryLayout<Double>.size)) : 0
+        return o != 0 ? Double(bitPattern: table._bb.read(def: Double.NumaricValue.self, position: Int(o + table._postion), with: MemoryLayout<Double>.size)) : 0
         }
     }
     

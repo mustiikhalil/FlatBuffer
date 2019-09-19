@@ -43,8 +43,8 @@ struct FlatBuffer {
     /// - Parameter len:
     @inlinable mutating func push<T: Scaler>(value: T, len: Int) {
         ensureSpace(size: UInt8(len))
-        let pointer = UnsafeMutablePointer<T>.allocate(capacity: len)
-        pointer.initialize(to: value)
+        let pointer = UnsafeMutablePointer<T.NumaricValue>.allocate(capacity: len)
+        pointer.initialize(to: value.convertedEndian)
         write(pointer: pointer, len: len, index: writerIndex)
     }
     
@@ -117,8 +117,8 @@ struct FlatBuffer {
     #endif
 }
 
-func pointer<T: Scaler>(c: T) -> UnsafeMutablePointer<T> {
-    let p = UnsafeMutablePointer<T>.allocate(capacity: MemoryLayout<T>.size)
-    p.initialize(to: c)
+func pointer<T: Scaler>(c: T) -> UnsafeMutablePointer<T.NumaricValue> {
+    let p = UnsafeMutablePointer<T.NumaricValue>.allocate(capacity: MemoryLayout<T.NumaricValue>.size)
+    p.initialize(to: c.convertedEndian)
     return p
 }
