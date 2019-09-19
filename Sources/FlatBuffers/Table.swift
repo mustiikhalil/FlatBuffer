@@ -19,7 +19,9 @@ class Table {
     func offset(_ o: Int32) -> Int32 {
         let size = MemoryLayout<VOffset>.size
         let vTable = _bb.read(def: Int32.self, position: Int(o), with: size)
+        print(vTable)
         let index = Int32(_postion) - Int32(vTable)
+        print("index: ", index)
         return index < _bb.read(def: VOffset.self, position: Int(index), with: size) ? Int32(_bb.read(def: VOffset.self, position: Int(o + index), with: size)) : 0
     }
     
