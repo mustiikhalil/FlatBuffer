@@ -80,10 +80,6 @@ struct FlatBuffer {
     @inlinable mutating func rellocate(_ size: UInt8) {
         let currentWritingIndex = writerIndex
         _capacity += Int(size)
-        // FIXME: - remove in case not needed :D!
-//        while _capacity <= Int(size) + _writerSize {
-//            _capacity = _capacity << 1
-//        }
         let newData = UnsafeMutableRawPointer.allocate(byteCount: _capacity, alignment: alignment)
         newData.initializeMemory(as: UInt8.self, repeating: 0, count: _capacity)
         newData.advanced(by: writerIndex).copyMemory(from: _memory.advanced(by: currentWritingIndex), byteCount: _writerSize)
@@ -91,15 +87,15 @@ struct FlatBuffer {
         _memory = newData
     }
     
+    @inlinable mutating func clearSize() {
+        _writerSize = _capacity
+    }
+    
     /// 
     @inlinable mutating func clear() {
         _writerSize = 0
         _memory.deallocate()
         _memory = UnsafeMutableRawPointer.allocate(byteCount: _capacity, alignment: alignment)
-    }
-    
-    @inlinable mutating func smallScratch<T>(value: T) {
-        ensureSpace(size: UInt8(MemoryLayout<T>.size))
     }
     
     @inlinable func read<T: Scaler>(def: T.Type, position: Int, with off: Int) -> T {

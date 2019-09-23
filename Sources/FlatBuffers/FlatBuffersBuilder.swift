@@ -47,6 +47,18 @@ class FlatBuffersBuilder {
 
 extension FlatBuffersBuilder {
     
+    /// Description
+    /// - Parameter offset: offset description
+    /// - Parameter prefix: prefix description
+    func finish<T>(offset: Offset<T>, addPrefix prefix: Bool = false) {
+        notNested()
+        _bb.clearSize()
+        let size = MemoryLayout<UOffset>.size
+        preAlign(len: Int32(size + (prefix ? size : 0)), alignment: _minAlignment)
+        push(element: refer(to: offset.o))
+        if prefix { push(element: _bb.size) }
+    }
+    
     ///
     func startTable()  -> UOffset {
         notNested()
@@ -61,7 +73,6 @@ extension FlatBuffersBuilder {
         
         let sizeofVoffset = MemoryLayout<VOffset>.size
         let vTableOffset = push(element: SOffset(0))
-        
         _maxVOffset = max(_maxVOffset + VOffset(sizeofVoffset), fieldIndex(toOffset: 0))
         _bb.ensureSpace(size: UInt8(_maxVOffset))
         
@@ -83,7 +94,7 @@ extension FlatBuffersBuilder {
                   len: size,
                   index: Int(_bb.size - vTableOffset) + size)
         isNested = false
-        return 0
+        return vTableOffset
     }
 }
 
@@ -179,9 +190,9 @@ extension FlatBuffersBuilder {
     /// - Parameter element:
     @discardableResult
     fileprivate func push<T: Scaler>(element: T) -> UOffset {
-        preAlign(len: Int32(MemoryLayout<T.NumaricValue>.size),
-                 alignment: Int32(MemoryLayout<T.NumaricValue>.size))
-        _bb.push(value: element, len: MemoryLayout<T.NumaricValue>.size)
+        preAlign(len: Int32(MemoryLayout<T>.size),
+                 alignment: Int32(MemoryLayout<T>.size))
+        _bb.push(value: element, len: MemoryLayout<T>.size)
         return _bb.size
     }
 }
