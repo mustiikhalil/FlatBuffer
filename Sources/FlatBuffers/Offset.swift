@@ -1,8 +1,8 @@
 import Foundation
 
-struct Offset<T> {
-    var o: UOffset
-    var isNull: Bool { return o == nil }
-    init(offset: UOffset) { o = offset }
-    init() { o = 0 }
+public struct Offset<T> {
+    public var o: UOffset
+    public var isNull: Bool { return o == nil }
+    public init(offset: UOffset) { o = offset }
+    public init() { o = 0 }
 }

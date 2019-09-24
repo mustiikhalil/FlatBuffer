@@ -5,47 +5,47 @@ import Foundation
 
 private let isLitteEndian = CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue)
 
-protocol Scaler: Equatable {
-    associatedtype NumaricValue
-    var convertedEndian: NumaricValue { get }
+public protocol Scalar: Equatable {
+    associatedtype NumericValue
+    var convertedEndian: NumericValue { get }
 }
 
-extension Scaler where Self: FixedWidthInteger {
-    var convertedEndian: NumaricValue {
-        if isLitteEndian { return self as! Self.NumaricValue }
-        return self.littleEndian as! Self.NumaricValue
+extension Scalar where Self: FixedWidthInteger {
+    public var convertedEndian: NumericValue {
+        if isLitteEndian { return self as! Self.NumericValue }
+        return self.littleEndian as! Self.NumericValue
     }
 }
 
-extension Double: Scaler {
-    typealias NumaricValue = UInt64
+extension Double: Scalar {
+    public typealias NumericValue = UInt64
     
-    var convertedEndian: UInt64 {
+    public var convertedEndian: UInt64 {
         if isLitteEndian { return self.bitPattern }
         return self.bitPattern.littleEndian
     }
 }
-extension Float: Scaler {
-    typealias NumaricValue = UInt32
+extension Float: Scalar {
+    public typealias NumericValue = UInt32
     
-    var convertedEndian: UInt32 {
+    public var convertedEndian: UInt32 {
         if isLitteEndian { return self.bitPattern }
         return self.bitPattern.littleEndian
     }
 }
 
-extension Int: Scaler { typealias NumaricValue = Int }
+extension Int: Scalar { public typealias NumericValue = Int }
 
-extension Int8: Scaler { typealias NumaricValue = Int8 }
-extension Int16: Scaler { typealias NumaricValue = Int16 }
-extension Int32: Scaler { typealias NumaricValue = Int32 }
-extension Int64: Scaler { typealias NumaricValue = Int64 }
+extension Int8: Scalar { public typealias NumericValue = Int8 }
+extension Int16: Scalar { public typealias NumericValue = Int16 }
+extension Int32: Scalar { public typealias NumericValue = Int32 }
+extension Int64: Scalar { public typealias NumericValue = Int64 }
 
-extension UInt8: Scaler { typealias NumaricValue = UInt8 }
-extension UInt16: Scaler { typealias NumaricValue = UInt16 }
+extension UInt8: Scalar { public typealias NumericValue = UInt8 }
+extension UInt16: Scalar { public typealias NumericValue = UInt16 }
 
-extension UInt32: Scaler { typealias NumaricValue = UInt32 }
-extension UInt64: Scaler { typealias NumaricValue = UInt64 }
+extension UInt32: Scalar { public typealias NumericValue = UInt32 }
+extension UInt64: Scalar { public typealias NumericValue = UInt64 }
 
 public typealias UOffset = UInt32
 public typealias SOffset = Int32

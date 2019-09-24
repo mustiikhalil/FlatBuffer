@@ -6,11 +6,7 @@ final class FlatBuffersTests: XCTestCase {
     let country = "Norway"
     
     func testEndian() { print("endian test: ", CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue)) }
-    
-    func testBuilderInit() {
-        XCTAssertNotNil(FlatBuffersBuilder(initialSize: 1))
-    }
-    
+
     func testCreateString() {
         let helloWorld = "Hello, world!"
         let b = FlatBuffersBuilder(initialSize: 16)
@@ -19,7 +15,6 @@ final class FlatBuffersTests: XCTestCase {
         b.clear()
         XCTAssertEqual(b.create(string: helloWorld).o, 20)
         XCTAssertEqual(b.create(string: country).o, 32)
-        b.clear()
     }
     
     func testStartTable() {
@@ -28,7 +23,6 @@ final class FlatBuffersTests: XCTestCase {
         b.clear()
         XCTAssertEqual(b.create(string: country).o, 12)
         XCTAssertEqual(b.startTable(), 12)
-        b.clear()
     }
     
     func testCreate() {
@@ -36,7 +30,6 @@ final class FlatBuffersTests: XCTestCase {
         _ = Country.createCountry(builder: &b, name: country, log: 200, lan: 100)
         let v: [UInt8] = [10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 12, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
         XCTAssertEqual(b.sizedArray, v)
-        b.clear()
     }
     
     func testCreateFinish() {
@@ -54,17 +47,20 @@ final class FlatBuffersTests: XCTestCase {
         let v: [UInt8] = [44, 0, 0, 0, 16, 0, 0, 0, 0, 0, 10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 12, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0, ]
         XCTAssertEqual(b.sizedArray, v)
     }
-
-    func testFetchLan() {
-        let bb: [UInt8] = [16, 0, 0, 0, 0, 0, 10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 12, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
-        var b = FlatBuffer(bytes: bb)
-        let country = Country.getRootAsCountry(b)
-        XCTAssertEqual(100, country.lan)
-        b.clear()
+    
+    func testCreatingTwoCountries() {
+        let norway = "Norway"
+        let denmark = "Denmark"
+        var b = FlatBuffersBuilder(initialSize: 20)
+        let noStr = b.create(string: norway)
+        let deStr = b.create(string: denmark)
+        let n = Country.createCountry(builder: &b, offset: noStr, log: 888, lan: 700)
+        let d = Country.createCountry(builder: &b, offset: deStr, log: 200, lan: 100)
+        XCTAssertEqual(b.sizedArray, [10, 0, 18, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 40, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 0, 0, 10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 24, 0, 0, 0, 188, 2, 0, 0, 120, 3, 0, 0, 7, 0, 0, 0, 68, 101, 110, 109, 97, 114, 107, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0])
     }
 }
 
-struct Country {
+class Country {
     
     static let offsets: (name: VOffset, lan: VOffset, lng: VOffset) = (4,6,8)
     
@@ -78,16 +74,16 @@ struct Country {
     
     private init(table t: Table) { table = t }
     
-    static func getRootAsCountry(_ bb: FlatBuffer) -> Country {
+    @inlinable static func getRootAsCountry(_ bb: FlatBuffer) -> Country {
         let pos = bb.read(def: Int32.self, position: Int(bb.size), with: MemoryLayout<Int32>.size)
         return Country(table: Table(bb: bb, position: Int32(pos)))
     }
     
-    static func createCountry(builder: inout FlatBuffersBuilder, name: String, log: Int32, lan: Int32) -> Offset<Country> {
+    @inlinable static func createCountry(builder: inout FlatBuffersBuilder, name: String, log: Int32, lan: Int32) -> Offset<Country> {
         return createCountry(builder: &builder, offset: builder.create(string: name), log: log, lan: lan)
     }
     
-    static func createCountry(builder: inout FlatBuffersBuilder, offset: Offset<String>, log: Int32, lan: Int32) -> Offset<Country> {
+    @inlinable static func createCountry(builder: inout FlatBuffersBuilder, offset: Offset<String>, log: Int32, lan: Int32) -> Offset<Country> {
         let _start = builder.startTable()
         Country.add(builder: &builder, lng: log)
         Country.add(builder: &builder, lan: lan)
@@ -95,23 +91,23 @@ struct Country {
         return Country.end(builder: &builder, startOffset: _start)
     }
     
-    static func end(builder: inout FlatBuffersBuilder, startOffset: UOffset) -> Offset<Country> {
+    @inlinable static func end(builder: inout FlatBuffersBuilder, startOffset: UOffset) -> Offset<Country> {
         return Offset(offset: builder.endTable(at: startOffset))
     }
     
-    static func add(builder: inout FlatBuffersBuilder, name: String) {
+    @inlinable static func add(builder: inout FlatBuffersBuilder, name: String) {
         add(builder: &builder, name: builder.create(string: name))
     }
     
-    static func add(builder: inout FlatBuffersBuilder, name: Offset<String>) {
+    @inlinable static func add(builder: inout FlatBuffersBuilder, name: Offset<String>) {
         builder.add(offset: name, at: Country.offsets.name)
     }
     
-    static func add(builder: inout FlatBuffersBuilder, lan: Int32) {
+    @inlinable static func add(builder: inout FlatBuffersBuilder, lan: Int32) {
         builder.add(element: lan, def: 0, at: Country.offsets.lan)
     }
     
-    static func add(builder: inout FlatBuffersBuilder, lng: Int32) {
+    @inlinable static func add(builder: inout FlatBuffersBuilder, lng: Int32) {
         builder.add(element: lng, def: 0, at: Country.offsets.lng)
     }
 }

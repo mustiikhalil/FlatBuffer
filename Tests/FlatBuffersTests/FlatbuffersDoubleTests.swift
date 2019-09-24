@@ -4,19 +4,12 @@ import XCTest
 final class FlatBuffersDoubleTests: XCTestCase {
 
     let country = "Norway"
-    
-    func testEndian() { print("endian test: ", CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue)) }
-    
-    func testBuilderInit() {
-        XCTAssertNotNil(FlatBuffersBuilder(initialSize: 1))
-    }
   
     func testCreateCountry() {
         var b = FlatBuffersBuilder(initialSize: 16)
         _ = CountryDouble.createCountry(builder: &b, name: country, log: 200, lan: 100)
-        let v: [UInt8] = [10, 0, 28, 0, 4, 0, 8, 0, 16, 0, 10, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 89, 64, 0, 0, 0, 0, 0, 0, 105, 64, 0, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0,]
+        let v: [UInt8] = [10, 0, 28, 0, 4, 0, 8, 0, 16, 0, 10, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 89, 64, 0, 0, 0, 0, 0, 0, 105, 64, 0, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
         XCTAssertEqual(b.sizedArray, v)
-        b.clear()
     }
     
     func testCreateFinish() {
@@ -34,17 +27,9 @@ final class FlatBuffersDoubleTests: XCTestCase {
         let v: [UInt8] = [60, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 28, 0, 4, 0, 8, 0, 16, 0, 10, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 89, 64, 0, 0, 0, 0, 0, 0, 105, 64, 0, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
         XCTAssertEqual(b.sizedArray, v)
     }
-
-    func testFetchLan() {
-        let bb: [UInt8] = [16, 0, 0, 0, 0, 0, 10, 0, 28, 0, 4, 0, 8, 0, 16, 0, 10, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 89, 64, 0, 0, 0, 0, 0, 0, 105, 64, 0, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
-        var b = FlatBuffer(bytes: bb)
-        let country = CountryDouble.getRootAsCountry(b)
-        XCTAssertEqual(100.0, country.lan)
-        b.clear()
-    }
 }
 
-struct CountryDouble {
+class CountryDouble {
     
     static let offsets: (name: VOffset, lan: VOffset, lng: VOffset) = (4,6,8)
     

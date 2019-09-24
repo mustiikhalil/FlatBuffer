@@ -1,42 +1,46 @@
 import Foundation
 
 //// TODO: - add docs
-
-class FlatBuffersBuilder {
+public final class FlatBuffersBuilder {
 
     private var _vtable: [FieldLoc] = []
     private var _vtables: [UOffset] = []
     private var _bb: FlatBuffer
-    private var _minAlignment: Int32 = 0
     private var isNested = false
     private var _numOfFields = 0
     private var _maxVOffset: VOffset = 0
     
-    var data: Data { return Data(bytes: _bb.memory, count: _bb.capacity) }
+    var _minAlignment: Int32 = 0 {
+        didSet {
+            _bb.alignment = Int(_minAlignment)
+        }
+    }
     
-    var sizedArray: [UInt8] {
-        let cp = _bb.capacity
-        let ptr = UnsafeBufferPointer(start: _bb.memory.bindMemory(to: UInt8.self, capacity: cp), count: cp)
+    public var data: Data { return Data(bytes: _bb.memory, count: _bb.capacity) }
+    
+    public var sizedArray: [UInt8] {
+        let cp = _bb.capacity - _bb.writerIndex
+        let ptr = UnsafeBufferPointer(start: _bb.memory.advanced(by: _bb.writerIndex).bindMemory(to: UInt8.self, capacity: cp), count: cp)
         return Array(ptr)
     }
     
-    var buffer: FlatBuffer { return _bb }
+    public var buffer: FlatBuffer { return _bb }
     
     ///
     /// - Parameter initialSize:
-    init(initialSize: Int32 = 1024)  {
+    public init(initialSize: Int32 = 1024)  {
         guard initialSize > 0 else { fatalError( FlatbufferError.sizeIsZeroOrLess.errorDescription ?? "") }
         _bb = FlatBuffer(initialSize: Int(initialSize))
     }
     
     ///
-    func clear() {
+    public func clear() {
         _minAlignment = 0
         isNested = false
         _bb.clear()
     }
     
-    func clearOffsets() {
+    public func clearOffsets() {
         _maxVOffset = 0
         _numOfFields = 0
         _vtable = []
@@ -50,9 +54,8 @@ extension FlatBuffersBuilder {
     /// Description
     /// - Parameter offset: offset description
     /// - Parameter prefix: prefix description
-    func finish<T>(offset: Offset<T>, addPrefix prefix: Bool = false) {
+    public func finish<T>(offset: Offset<T>, addPrefix prefix: Bool = false) {
         notNested()
-        _bb.clearSize()
         let size = MemoryLayout<UOffset>.size
         preAlign(len: Int32(size + (prefix ? size : 0)), alignment: _minAlignment)
         push(element: refer(to: offset.o))
@@ -60,7 +63,7 @@ extension FlatBuffersBuilder {
     }
     
     ///
-    func startTable()  -> UOffset {
+    public func startTable()  -> UOffset {
         notNested()
         isNested = true
         return _bb.size
@@ -68,7 +71,7 @@ extension FlatBuffersBuilder {
     
     ///
     /// - Parameter offset:
-    func endTable(at startOffset: UOffset)  -> UOffset {
+    public func endTable(at startOffset: UOffset)  -> UOffset {
         if !isNested { fatalError( FlatbufferError.serializingWithoutCallingStartVector.errorDescription ?? "") }
         
         let sizeofVoffset = MemoryLayout<VOffset>.size
@@ -90,9 +93,9 @@ extension FlatBuffersBuilder {
 //        var isAlreadyAdded = false
         
         let size = MemoryLayout<Int32>.size
-        _bb.write(pointer: pointer(c: Int32(_bb.size) - Int32(vTableOffset)),
+        _bb.write(value: Int32(_bb.size) - Int32(vTableOffset),
                   len: size,
-                  index: Int(_bb.size - vTableOffset) + size)
+                  index: Int(vTableOffset))
         isNested = false
         return vTableOffset
     }
@@ -122,13 +125,13 @@ extension FlatBuffersBuilder {
     ///
     /// - Parameter len:
     /// - Parameter type:
-    func preAlign<T: Scaler>(len: Int32, type: T.Type) {
+    fileprivate func preAlign<T: Scalar>(len: Int32, type: T.Type) {
         preAlign(len: len, alignment: Int32(MemoryLayout<T>.size))
     }
     
     ///
     /// - Parameter off:
-    func refer(to off: UOffset) -> UOffset {
+    fileprivate func refer(to off: UOffset) -> UOffset {
         let size = Int32(MemoryLayout<UOffset>.size)
         preAlign(len: size, alignment: size)
         return _bb.size - off + UInt32(size)
@@ -137,7 +140,7 @@ extension FlatBuffersBuilder {
     ///
     /// - Parameter offset:
     /// - Parameter position:
-    func track(offset: UOffset, at position: VOffset) {
+    fileprivate func track(offset: UOffset, at position: VOffset) {
         let lock = FieldLoc(vOffset: position, uOffset: offset)
         _vtable.append(lock)
         _numOfFields += 1
@@ -146,7 +149,7 @@ extension FlatBuffersBuilder {
     
     ///
     /// - Parameter fieldId:
-    func fieldIndex(toOffset fieldId: VOffset) -> VOffset {
+    fileprivate func fieldIndex(toOffset fieldId: VOffset) -> VOffset {
         let fixedSize: VOffset = 2
         return (fieldId + fixedSize) * VOffset(MemoryLayout<VOffset>.size)
     }
@@ -159,7 +162,7 @@ extension FlatBuffersBuilder {
     ///
     /// - Parameter offset:
     /// - Parameter position:
-    func add<T>(offset: Offset<T>, at position: VOffset) {
+    public func add<T>(offset: Offset<T>, at position: VOffset) {
         if offset.isNull { return }
         add(element: refer(to: offset.o), def: 0, at: position)
     }
@@ -168,7 +171,7 @@ extension FlatBuffersBuilder {
     /// - Parameter e:
     /// - Parameter def:
     /// - Parameter position:
-    func add<T: Scaler>(element: T, def: T, at position: VOffset) {
+    public func add<T: Scalar>(element: T, def: T, at position: VOffset) {
         if (element == def) { return }
         let off = push(element: element)
         track(offset: off, at: position)
@@ -176,7 +179,7 @@ extension FlatBuffersBuilder {
         
     ///
     /// - Parameter str:
-    func create(string str: String)  -> Offset<String> {
+    public func create(string str: String)  -> Offset<String> {
         let len = str.count
         notNested()
         preAlign(len: Int32(len) + 1, type: UOffset.self)
@@ -189,7 +192,7 @@ extension FlatBuffersBuilder {
     ///
     /// - Parameter element:
     @discardableResult
-    fileprivate func push<T: Scaler>(element: T) -> UOffset {
+    fileprivate func push<T: Scalar>(element: T) -> UOffset {
         preAlign(len: Int32(MemoryLayout<T>.size),
                  alignment: Int32(MemoryLayout<T>.size))
         _bb.push(value: element, len: MemoryLayout<T>.size)
@@ -199,6 +202,6 @@ extension FlatBuffersBuilder {
 
 #if DEBUG
 extension FlatBuffersBuilder {
-    func debug(str: String = "normal memory: ") { _bb.debugMemory(str: str) }
+    public func debug(str: String = "normal memory: ") { _bb.debugMemory(str: str) }
 }
 #endif

@@ -1,85 +1,86 @@
 import Foundation
 
 ///
-struct FlatBuffer {
+public final class FlatBuffer {
     
-    private let alignment = 1
     private var _memory: UnsafeMutableRawPointer
     private var _writerSize: Int = 0
     private var _capacity: Int
-    var writerIndex: Int { return _capacity - _writerSize }
     
-    var size: UOffset { return UOffset(_writerSize) }
-    var memory: UnsafeMutableRawPointer { return _memory }
-    var capacity: Int { return _capacity }
+    var alignment = 1
+    
+    public var writerIndex: Int { return _capacity - _writerSize }
+    public var size: UOffset { return UOffset(_writerSize) }
+    public var memory: UnsafeMutableRawPointer { return _memory }
+    public var capacity: Int { return _capacity }
     
     ///
     /// - Parameter size:
     init(initialSize size: Int) {
-        _memory = UnsafeMutableRawPointer.allocate(byteCount: 1, alignment: alignment)
+        _memory = UnsafeMutableRawPointer.allocate(byteCount: size, alignment: alignment)
         _memory.initializeMemory(as: UInt8.self, repeating: 0, count: size)
         _capacity = size
     }
     
-    init(bytes: [UInt8]) {
+    public init(bytes: [UInt8]) {
         let ptr = UnsafePointer(bytes)
         _memory = UnsafeMutableRawPointer.allocate(byteCount: bytes.count, alignment: alignment)
         _memory.copyMemory(from: ptr, byteCount: bytes.count)
         _capacity = bytes.count
     }
     
+    deinit { _memory.deallocate() }
+    
     ///
     /// - Parameter padding:
-    @inlinable mutating func fill(padding: UInt32) {
+    func fill(padding: UInt32) {
         ensureSpace(size: UInt8(padding))
-        for _ in 0..<padding {
-            _writerSize += MemoryLayout<UInt8>.size
-            _memory.advanced(by: writerIndex).storeBytes(of: 0, as: UInt8.self)
-        }
+        _writerSize += (MemoryLayout<UInt8>.size * Int(padding))
     }
 
     ///
     /// - Parameter value:
     /// - Parameter len:
-    @inlinable mutating func push<T: Scaler>(value: T, len: Int) {
+    func push<T: Scalar>(value: T, len: Int) {
         ensureSpace(size: UInt8(len))
-        let pointer = UnsafeMutablePointer<T.NumaricValue>.allocate(capacity: len)
-        pointer.initialize(to: value.convertedEndian)
-        write(pointer: pointer, len: len, index: writerIndex)
+        _memory.storeBytes(of: value, toByteOffset: writerIndex - len, as: T.self)
+        _writerSize += len
     }
     
     ///
     /// - Parameter str:
     /// - Parameter len:
-    @inlinable mutating func push(string str: String, len: Int) {
+    func push(string str: String, len: Int) {
         ensureSpace(size: UInt8(len))
-        let pointer = UnsafeMutablePointer<String>.allocate(capacity: len)
-        pointer.initialize(to: str)
-        write(pointer: pointer, len: len, index: writerIndex)
+        let utf8View = str.utf8
+        for c in utf8View.lazy.reversed() {
+            push(value: c, len: 1)
+        }
     }
     
     ///
     /// - Parameter pointer:
     /// - Parameter len:
-    @inlinable mutating func write<T>(pointer: UnsafeMutablePointer<T>, len: Int, index: Int) {
-        _memory.advanced(by: index - len).copyMemory(from: pointer, byteCount: len)
-        _writerSize += len
+    func write<T>(value: T, len: Int, index: Int) {
+        _memory.storeBytes(of: value, toByteOffset: _capacity - index, as: T.self)
     }
     
     ///
     /// - Parameter size:
     @discardableResult
-    @inlinable mutating func ensureSpace(size: UInt8) -> UInt8 {
-        if Int(size) + _writerSize > _capacity { rellocate(size) }
+    func ensureSpace(size: UInt8) -> UInt8 {
+        if Int(size) + _writerSize > _capacity { reallocate(size) }
         assert(size < FlatBufferMaxSize, FlatbufferError.growBeyondTwoGB.errorDescription ?? "FB doesn't support more than 2GB")
         return size
     }
     
     ///
     /// - Parameter size:
-    @inlinable mutating func rellocate(_ size: UInt8) {
+    fileprivate func reallocate(_ size: UInt8) {
         let currentWritingIndex = writerIndex
-        _capacity += Int(size)
+        while _capacity <= _writerSize + Int(size) {
+            _capacity = _capacity << 1
+        }
         let newData = UnsafeMutableRawPointer.allocate(byteCount: _capacity, alignment: alignment)
         newData.initializeMemory(as: UInt8.self, repeating: 0, count: _capacity)
         newData.advanced(by: writerIndex).copyMemory(from: _memory.advanced(by: currentWritingIndex), byteCount: _writerSize)
@@ -87,18 +88,18 @@ struct FlatBuffer {
         _memory = newData
     }
     
-    @inlinable mutating func clearSize() {
+    public func clearSize() {
         _writerSize = _capacity
     }
     
-    /// 
-    @inlinable mutating func clear() {
+    ///
+    public func clear() {
         _writerSize = 0
         _memory.deallocate()
         _memory = UnsafeMutableRawPointer.allocate(byteCount: _capacity, alignment: alignment)
     }
     
-    @inlinable func read<T: Scaler>(def: T.Type, position: Int, with off: Int) -> T {
+    public func read<T: Scalar>(def: T.Type, position: Int, with off: Int) -> T {
         let r = UnsafeMutableRawPointer.allocate(byteCount: 0, alignment: off)
         r.copyMemory(from: _memory.advanced(by: position), byteCount: off)
         return r.load(as: T.self)
@@ -108,13 +109,7 @@ struct FlatBuffer {
     func debugMemory(str: String) {
         let bufprt = UnsafeBufferPointer(start: _memory.assumingMemoryBound(to: UInt8.self), count: _capacity)
         let a = Array(bufprt)
-        print(str, a, " \nwith buffer size: \(a.count)")
+        print(str, a, " \nwith buffer size: \(a.count) and writer size: \(_writerSize)")
     }
     #endif
-}
-
-func pointer<T: Scaler>(c: T) -> UnsafeMutablePointer<T.NumaricValue> {
-    let p = UnsafeMutablePointer<T.NumaricValue>.allocate(capacity: MemoryLayout<T.NumaricValue>.size)
-    p.initialize(to: c.convertedEndian)
-    return p
 }
