@@ -23,7 +23,7 @@ class Table {
         return index < _bb.read(def: VOffset.self, position: Int(index), with: size) ? Int32(_bb.read(def: VOffset.self, position: Int(o + index), with: size)) : 0
     }
     
-    func reader<T: Scaler>(def: T, position: Int) -> T {
+    func reader<T: Scalar>(def: T, position: Int) -> T {
         let r = _bb.read(def: T.self, position: position, with: MemoryLayout<T>.stride)
         return r
     }
