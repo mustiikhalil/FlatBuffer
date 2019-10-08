@@ -37,13 +37,23 @@ public final class FlatBuffer {
         ensureSpace(size: UInt8(padding))
         _writerSize += (MemoryLayout<UInt8>.size * Int(padding))
     }
+    
+    ///
+    /// - Parameter elements:
+    func push<T: Scalar>(elements: [T]) {
+        let size = elements.count * MemoryLayout<T>.size
+        ensureSpace(size: UInt8(size))
+        elements.lazy.reversed().forEach { (s) in
+            push(value: s, len: MemoryLayout.size(ofValue: s))
+        }
+    }
 
     ///
     /// - Parameter value:
     /// - Parameter len:
     func push<T: Scalar>(value: T, len: Int) {
         ensureSpace(size: UInt8(len))
-        _memory.storeBytes(of: value, toByteOffset: writerIndex - len, as: T.self)
+        _memory.storeBytes(of: value.convertedEndian, toByteOffset: writerIndex - len, as: T.NumericValue.self)
         _writerSize += len
     }
     
@@ -89,7 +99,7 @@ public final class FlatBuffer {
     }
     
     public func clearSize() {
-        _writerSize = _capacity
+        _writerSize = 0
     }
     
     ///

@@ -9,7 +9,8 @@ public enum FlatbufferError: Error {
     serializingWithoutCallingStartVector,
     growBeyondTwoGB,
     invalidFieldNumber,
-    endTableCalledBeforeStart
+    endTableCalledBeforeStart,
+    calledSizedBinaryBeforeFinish
 }
 
 extension FlatbufferError: LocalizedError {
@@ -33,6 +34,8 @@ extension FlatbufferError: LocalizedError {
             
         case .endTableCalledBeforeStart:
             return "End table was called before calling start table"
+        case .calledSizedBinaryBeforeFinish:
+            return ""
         }
     }
 }

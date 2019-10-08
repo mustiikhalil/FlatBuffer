@@ -2,13 +2,15 @@ import Foundation
 
 //// TODO: - add docs
 public final class FlatBuffersBuilder {
-
+    
     private var _vtable: [FieldLoc] = []
     private var _vtables: [UOffset] = []
     private var _bb: FlatBuffer
     private var isNested = false
     private var _numOfFields = 0
     private var _maxVOffset: VOffset = 0
+    private var stringOffsetMap: [String: Offset<String>] = [:]
+    private var finished = false
     
     var _minAlignment: Int32 = 0 {
         didSet {
@@ -16,7 +18,10 @@ public final class FlatBuffersBuilder {
         }
     }
     
-    public var data: Data { return Data(bytes: _bb.memory, count: _bb.capacity) }
+    public var data: Data {
+        if !finished { fatalError(FlatbufferError.calledSizedBinaryBeforeFinish.localizedDescription) }
+        return Data(bytes: _bb.memory, count: _bb.capacity)
+    }
     
     public var sizedArray: [UInt8] {
         let cp = _bb.capacity - _bb.writerIndex
@@ -25,6 +30,8 @@ public final class FlatBuffersBuilder {
     }
     
     public var buffer: FlatBuffer { return _bb }
+    
+    // MARK: - Init
     
     ///
     /// - Parameter initialSize:
@@ -38,12 +45,14 @@ public final class FlatBuffersBuilder {
         _minAlignment = 0
         isNested = false
         _bb.clear()
+        stringOffsetMap = [:]
     }
     
     public func clearOffsets() {
         _maxVOffset = 0
         _numOfFields = 0
         _vtable = []
+        stringOffsetMap = [:]
     }
 }
 
@@ -60,10 +69,12 @@ extension FlatBuffersBuilder {
         preAlign(len: Int32(size + (prefix ? size : 0)), alignment: _minAlignment)
         push(element: refer(to: offset.o))
         if prefix { push(element: _bb.size) }
+        clearOffsets()
+        finished = true
     }
     
     ///
-    public func startTable()  -> UOffset {
+    public func startTable() -> UOffset {
         notNested()
         isNested = true
         return _bb.size
@@ -80,7 +91,7 @@ extension FlatBuffersBuilder {
         _bb.ensureSpace(size: UInt8(_maxVOffset))
         
         let tableObjectSize = vTableOffset - startOffset
-        assert(tableObjectSize < 0x10000)
+        guard tableObjectSize < 0x10000 else { fatalError(FlatbufferError.growBeyondTwoGB.errorDescription ?? "") }
         
         for i in _vtable {
             _bb.push(value: VOffset(vTableOffset - i.uOffset), len: sizeofVoffset)
@@ -90,7 +101,7 @@ extension FlatBuffersBuilder {
         
         clearOffsets()
         // FIXME: - check if there is a vtable already added and point to it
-//        var isAlreadyAdded = false
+        //        var isAlreadyAdded = false
         
         let size = MemoryLayout<Int32>.size
         _bb.write(value: Int32(_bb.size) - Int32(vTableOffset),
@@ -111,17 +122,17 @@ extension FlatBuffersBuilder {
     ///
     /// - Parameter size:
     fileprivate func minAlignment(size: Int32) { if size > _minAlignment { _minAlignment = size } }
-
+    
     ///
     fileprivate func padding(bufSize: UInt32, elementSize: UInt32) -> UInt32 { ((~bufSize) + 1) & (elementSize - 1) }
-
+    
     ///
     /// - Parameter len:
     fileprivate func preAlign(len: Int32, alignment: Int32) {
         minAlignment(size: alignment)
         _bb.fill(padding: padding(bufSize: _bb.size + UOffset(len), elementSize: UOffset(alignment)))
     }
-
+    
     ///
     /// - Parameter len:
     /// - Parameter type:
@@ -155,9 +166,87 @@ extension FlatBuffersBuilder {
     }
 }
 
-// MARK: - Inserting Elements to Buffer
+// MARK: - Vectors
 
 extension FlatBuffersBuilder {
+    ///
+    /// - Parameter len:
+    /// - Parameter elementSize:
+    public func startVector(_ len: Int32, elementSize: Int) {
+        notNested()
+        isNested = true
+        preAlign(len: len * Int32(elementSize), type: UOffset.self)
+        preAlign(len: len * Int32(elementSize), alignment: Int32(elementSize))
+    }
+    
+    ///
+    /// - Parameter len:
+    public func endVector(len: Int32) -> UOffset {
+        if !isNested { fatalError(FlatbufferError.serializingWithoutCallingStartVector.errorDescription ?? "") }
+        isNested = false
+        return push(element: len)
+    }
+    
+    ///
+    /// - Parameter elements:
+    /// - Parameter size:
+    public func createVector<T: Scalar>(_ elements: [T], size: Int32) -> Offset<UOffset> {
+        startVector(size, elementSize: MemoryLayout<T>.size)
+        _bb.push(elements: elements)
+        return Offset(offset: endVector(len: size))
+    }
+    
+    ///
+    /// - Parameter offsets:
+    public func createVector<T>(ofOffsets offsets: [Offset<T>]) -> Offset<UOffset> {
+        return createVector(ofOffsets: offsets, len: Int32(offsets.count))
+    }
+    
+    ///
+    /// - Parameter offsets:
+    /// - Parameter len:
+    public func createVector<T>(ofOffsets offsets: [Offset<T>], len: Int32) -> Offset<UOffset> {
+        startVector(len, elementSize: MemoryLayout<Offset<T>>.size)
+        for o in offsets.lazy.reversed() { push(element: o) }
+        return Offset(offset: endVector(len: len))
+    }
+    
+    ///
+    /// - Parameter str:
+    public func createVector(ofStrings str: [String]) -> Offset<UOffset> {
+        var offsets: [Offset<String>] = []
+        for s in str { offsets.append(create(string: s)) }
+        return createVector(ofOffsets: offsets)
+    }
+    
+}
+
+extension FlatBuffersBuilder {
+    
+    // MARK: - Inserting Strings
+    
+    ///
+    /// - Parameter str:
+    public func create(string str: String) -> Offset<String> {
+        let len = str.count
+        notNested()
+        preAlign(len: Int32(len) + 1, type: UOffset.self)
+        _bb.fill(padding: 1)
+        _bb.push(string: str, len: len)
+        push(element: UOffset(len))
+        return Offset(offset: _bb.size)
+    }
+    
+    public func createShared(string str: String) -> Offset<String> {
+        if let offset = stringOffsetMap[str] {
+            return offset
+        }
+        let offset = create(string: str)
+        stringOffsetMap[str] = offset
+        return offset
+    }
+    
+    // MARK: - Inseting offsets
     
     ///
     /// - Parameter offset:
@@ -168,6 +257,15 @@ extension FlatBuffersBuilder {
     }
     
     ///
+    /// - Parameter o:
+    @discardableResult
+    public func push<T>(element o: Offset<T>) -> UOffset {
+        return push(element: refer(to: o.o))
+    }
+    
+    // MARK: - Inserting Scalars to Buffer
+    
+    ///
     /// - Parameter e:
     /// - Parameter def:
     /// - Parameter position:
@@ -175,18 +273,6 @@ extension FlatBuffersBuilder {
         if (element == def) { return }
         let off = push(element: element)
         track(offset: off, at: position)
-    }
-        
-    ///
-    /// - Parameter str:
-    public func create(string str: String)  -> Offset<String> {
-        let len = str.count
-        notNested()
-        preAlign(len: Int32(len) + 1, type: UOffset.self)
-        _bb.fill(padding: 1)
-        _bb.push(string: str, len: len)
-        push(element: UOffset(len))
-        return Offset(offset: _bb.size)
     }
     
     ///
