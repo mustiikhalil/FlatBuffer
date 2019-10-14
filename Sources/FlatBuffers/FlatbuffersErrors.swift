@@ -10,7 +10,9 @@ public enum FlatbufferError: Error {
     growBeyondTwoGB,
     invalidFieldNumber,
     endTableCalledBeforeStart,
-    calledSizedBinaryBeforeFinish
+    calledSizedBinaryBeforeFinish,
+    endianCheck,
+    outOfRange
 }
 
 extension FlatbufferError: LocalizedError {
@@ -34,8 +36,15 @@ extension FlatbufferError: LocalizedError {
             
         case .endTableCalledBeforeStart:
             return "End table was called before calling start table"
+            
         case .calledSizedBinaryBeforeFinish:
-            return ""
+            return "Data shouldn't be called before finish()"
+            
+        case .endianCheck:
+            return "Reading/Writing a buffer in big endian machine is not supported on swift"
+            
+        case .outOfRange:
+            return "Out of the table range"
         }
     }
 }

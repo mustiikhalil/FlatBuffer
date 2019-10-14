@@ -11,6 +11,7 @@ public final class FlatBuffersBuilder {
     private var stringOffsetMap: [String: Offset<String>] = [:]
     private var finished = false
     private var serializeDefaults: Bool
+    private var objectStart = 0
     
     var size: UOffset { return _bb.size }
     var _minAlignment: Int32 = 0 {
@@ -36,7 +37,7 @@ public final class FlatBuffersBuilder {
     
     ///
     /// - Parameter initialSize:
-    public init(initialSize: Int32 = 1024, serializeDefaults force: Bool = false)  {
+    public init(initialSize: Int32 = 1024, serializeDefaults force: Bool = false) {
         guard initialSize > 0 else { fatalError( FlatbufferError.sizeIsZeroOrLess.errorDescription ?? "") }
         serializeDefaults = force
         _bb = FlatBuffer(initialSize: Int(initialSize))
@@ -45,6 +46,7 @@ public final class FlatBuffersBuilder {
     ///
     public func clear() {
         _minAlignment = 0
+        objectStart = 0
         isNested = false
         _bb.clear()
         stringOffsetMap = [:]
@@ -52,6 +54,7 @@ public final class FlatBuffersBuilder {
     
     public func clearOffsets() {
         _numOfFields = 0
+        objectStart = 0
         _vtable = []
         stringOffsetMap = [:]
     }
@@ -75,10 +78,10 @@ extension FlatBuffersBuilder {
     }
     
     ///
-    public func startTable(s: Int) -> UOffset {
+    public func startTable(with numOfFields: Int) -> UOffset {
         notNested()
         isNested = true
-        _vtable = [UInt32](repeating: 0, count: s)
+        _vtable = [UInt32](repeating: 0, count: numOfFields)
         return _bb.size
     }
     
@@ -120,7 +123,7 @@ extension FlatBuffersBuilder {
     
     /// Checks if the flag isNested is true to fatalError( an error since nested serialization is not allowed
     fileprivate func notNested()  { if isNested { fatalError( FlatbufferError.nestedSerializationNotAllowed.errorDescription ?? "") } }
-
+    
     ///
     /// - Parameter size:
     fileprivate func minAlignment(size: Int32) { if size > _minAlignment { _minAlignment = size } }
@@ -190,7 +193,8 @@ extension FlatBuffersBuilder {
     ///
     /// - Parameter elements:
     /// - Parameter size:
-    public func createVector<T: Scalar>(_ elements: [T], size: Int32) -> Offset<UOffset> {
+    public func createVector<T: Scalar>(_ elements: [T], size: Int) -> Offset<UOffset> {
+        let size = Int32(size)
         startVector(size, elementSize: MemoryLayout<T>.size)
         _bb.push(elements: elements)
         return Offset(offset: endVector(len: size))
@@ -221,7 +225,7 @@ extension FlatBuffersBuilder {
     
     ///
     /// - Parameter structs:
-    public func createVector<T: Struct>(structs: [T]) -> Offset<UOffset> {
+    public func createVector<T: Writeable>(structs: [T]) -> Offset<UOffset> {
         let size = MemoryLayout<T>.size
         startVector(Int32(structs.count * size), elementSize: MemoryLayout<T>.alignment)
         for i in structs.lazy.reversed() { _bb.push(struct: i, len: size) }
@@ -234,11 +238,22 @@ extension FlatBuffersBuilder {
 
 extension FlatBuffersBuilder {
     
-    func create<T: Struct>(struct s: T, field: UOffset) {
+    ///
+    /// - Parameter s:
+    /// - Parameter index:
+    @discardableResult
+    public func create<T: Writeable>(struct s: T) -> Offset<UOffset> {
         let size = Int32(MemoryLayout<T>.size)
         preAlign(len: size, alignment: Int32(MemoryLayout<T>.alignment))
         _bb.push(struct: s, len: Int(size))
-        track(offset: UOffset(_bb.size), at: VOffset(field))
+        return Offset(offset: _bb.size)
+    }
+    
+    ///
+    /// - Parameter o:
+    public func add(structOffset o: UOffset) {
+        guard Int(o) < _vtable.count else { fatalError(FlatbufferError.outOfRange.errorDescription ?? "") }
+        _vtable[Int(o)] = _bb.size
     }
 }
 
@@ -299,7 +314,7 @@ extension FlatBuffersBuilder {
     ///
     /// - Parameter element:
     @discardableResult
-    func push<T: Scalar>(element: T) -> UOffset {
+    public func push<T: Scalar>(element: T) -> UOffset {
         preAlign(len: Int32(MemoryLayout<T>.size),
                  alignment: Int32(MemoryLayout<T>.size))
         _bb.push(value: element, len: MemoryLayout<T>.size)

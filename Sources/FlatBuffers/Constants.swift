@@ -3,9 +3,7 @@
 
 import Foundation
 
-private let isLitteEndian = CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue)
-
-public protocol Struct {}
+let isLitteEndian = CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue)
 
 public protocol Scalar: Equatable {
     associatedtype NumericValue

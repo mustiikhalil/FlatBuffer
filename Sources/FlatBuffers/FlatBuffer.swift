@@ -7,7 +7,7 @@ public final class FlatBuffer {
     private var _writerSize: Int = 0
     private var _capacity: Int
     
-    var alignment = 1
+    internal var alignment = 1
     
     public var writerIndex: Int { return _capacity - _writerSize }
     public var size: UOffset { return UOffset(_writerSize) }
@@ -51,12 +51,12 @@ public final class FlatBuffer {
     ///
     /// - Parameter value:
     /// - Parameter len:
-    func push<T: Struct>(struct value: T, len: Int) {
+    func push<T: Writeable>(struct value: T, len: Int) {
         ensureSpace(size: UInt8(len))
         _memory.storeBytes(of: value, toByteOffset: writerIndex - len, as: T.self)
         _writerSize += len
     }
-
+    
     ///
     /// - Parameter value:
     /// - Parameter len:
@@ -118,10 +118,21 @@ public final class FlatBuffer {
         _memory = UnsafeMutableRawPointer.allocate(byteCount: _capacity, alignment: alignment)
     }
     
-    public func read<T: Scalar>(def: T.Type, position: Int, with off: Int) -> T {
-        let r = UnsafeMutableRawPointer.allocate(byteCount: 0, alignment: off)
-        r.copyMemory(from: _memory.advanced(by: position), byteCount: off)
+    public func read<T>(def: T.Type, position: Int) -> T {
+        let size = MemoryLayout<T>.size
+        let r = UnsafeMutableRawPointer.allocate(byteCount: size, alignment: size)
+        r.copyMemory(from: _memory.advanced(by: position), byteCount: size)
         return r.load(as: T.self)
+    }
+    
+    public func readSlice<T>(index: Int32, count: Int32) -> [T] {
+        let array = UnsafeBufferPointer(start: _memory.advanced(by: Int(index)).assumingMemoryBound(to: T.self), count: Int(count))
+        return Array(array)
+    }
+    
+    public func readString(at index: Int32, count: Int32, type: String.Encoding = .utf8) -> String? {
+        let bufprt = UnsafeBufferPointer(start: _memory.advanced(by: Int(index)).assumingMemoryBound(to: UInt8.self), count: Int(count))
+        return String(bytes: Array(bufprt), encoding: type)
     }
     
     #if DEBUG
