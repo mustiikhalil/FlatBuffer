@@ -7,6 +7,13 @@ final class FlatBuffersTests: XCTestCase {
     
     func testEndian() { print("endian test: ", CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue)) }
 
+    func testOffset() {
+        let o = Offset<Int>()
+        let b = Offset<Int>(offset: 1)
+        XCTAssertEqual(o.isEmpty, true)
+        XCTAssertEqual(b.isEmpty, false)
+    }
+    
     func testCreateString() {
         let helloWorld = "Hello, world!"
         let b = FlatBuffersBuilder(initialSize: 16)
@@ -19,10 +26,10 @@ final class FlatBuffersTests: XCTestCase {
     
     func testStartTable() {
         let b = FlatBuffersBuilder(initialSize: 16)
-        XCTAssertNoThrow(b.startTable())
+        XCTAssertNoThrow(b.startTable(s: 0))
         b.clear()
         XCTAssertEqual(b.create(string: country).o, 12)
-        XCTAssertEqual(b.startTable(), 12)
+        XCTAssertEqual(b.startTable(s: 0), 12)
     }
     
     func testCreate() {
@@ -44,14 +51,14 @@ final class FlatBuffersTests: XCTestCase {
         var b = FlatBuffersBuilder(initialSize: 16)
         let countryOff = Country.createCountry(builder: &b, name: country, log: 200, lan: 100)
         b.finish(offset: countryOff, addPrefix: true)
-        let v: [UInt8] = [44, 0, 0, 0, 16, 0, 0, 0, 0, 0, 10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 12, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0, ]
+        let v: [UInt8] = [44, 0, 0, 0, 16, 0, 0, 0, 0, 0, 10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 12, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
         XCTAssertEqual(b.sizedArray, v)
     }
 }
 
 class Country {
     
-    static let offsets: (name: VOffset, lan: VOffset, lng: VOffset) = (4,6,8)
+    static let offsets: (name: VOffset, lan: VOffset, lng: VOffset) = (0, 1, 2)
     
     private var table: Table
     
@@ -73,7 +80,7 @@ class Country {
     }
     
     @inlinable static func createCountry(builder: inout FlatBuffersBuilder, offset: Offset<String>, log: Int32, lan: Int32) -> Offset<Country> {
-        let _start = builder.startTable()
+        let _start = builder.startTable(s: 3)
         Country.add(builder: &builder, lng: log)
         Country.add(builder: &builder, lan: lan)
         Country.add(builder: &builder, name: offset)

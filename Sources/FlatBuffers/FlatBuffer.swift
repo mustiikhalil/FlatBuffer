@@ -47,6 +47,15 @@ public final class FlatBuffer {
             push(value: s, len: MemoryLayout.size(ofValue: s))
         }
     }
+    
+    ///
+    /// - Parameter value:
+    /// - Parameter len:
+    func push<T: Struct>(struct value: T, len: Int) {
+        ensureSpace(size: UInt8(len))
+        _memory.storeBytes(of: value, toByteOffset: writerIndex - len, as: T.self)
+        _writerSize += len
+    }
 
     ///
     /// - Parameter value:

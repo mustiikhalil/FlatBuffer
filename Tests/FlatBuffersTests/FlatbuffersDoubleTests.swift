@@ -53,7 +53,7 @@ class CountryDouble {
     }
     
     static func createCountry(builder: inout FlatBuffersBuilder, offset: Offset<String>, log: Double, lan: Double) -> Offset<Country> {
-        let _start = builder.startTable()
+        let _start = builder.startTable(s: 3)
         CountryDouble.add(builder: &builder, lng: log)
         CountryDouble.add(builder: &builder, lan: lan)
         CountryDouble.add(builder: &builder, name: offset)
