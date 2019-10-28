@@ -5,6 +5,8 @@ import Foundation
 
 private let isLitteEndian = CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue)
 
+public protocol Struct {}
+
 public protocol Scalar: Equatable {
     associatedtype NumericValue
     var convertedEndian: NumericValue { get }
@@ -47,6 +49,7 @@ extension UInt16: Scalar { public typealias NumericValue = UInt16 }
 extension UInt32: Scalar { public typealias NumericValue = UInt32 }
 extension UInt64: Scalar { public typealias NumericValue = UInt64 }
 
+public typealias Byte = UInt8
 public typealias UOffset = UInt32
 public typealias SOffset = Int32
 public typealias VOffset = UInt16
