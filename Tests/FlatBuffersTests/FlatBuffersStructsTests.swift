@@ -9,7 +9,7 @@ final class FlatBuffersStructsTests: XCTestCase {
         let o = Vec_Write.createVec(b, v: v)
         let end = VPointerVec.createVPointer(b: b, o: o)
         b.finish(offset: end)
-        XCTAssertEqual(b.sizedArray, [12, 0, 0, 0, 0, 0, 6, 0, 4, 0, 4, 0, 6, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64])
+        XCTAssertEqual(b.sizedByteArray, [12, 0, 0, 0, 0, 0, 6, 0, 4, 0, 4, 0, 6, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64])
     }
     
     func testReadingStruct() {
@@ -18,7 +18,7 @@ final class FlatBuffersStructsTests: XCTestCase {
         let o = Vec_Write.createVec(b, v: v)
         let end = VPointerVec.createVPointer(b: b, o: o)
         b.finish(offset: end)
-        let buffer = b.sizedArray
+        let buffer = b.sizedByteArray
         XCTAssertEqual(buffer, [12, 0, 0, 0, 0, 0, 6, 0, 4, 0, 4, 0, 6, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64])
         let point = VPointerVec.getRootAsCountry(FlatBuffer(bytes: buffer))
         XCTAssertEqual(point.vec?.z, v._z)
@@ -29,7 +29,7 @@ final class FlatBuffersStructsTests: XCTestCase {
         let path = b.createVector(structs: [Vec_Write(x: 1, y: 2, z: 3), Vec_Write(x: 4.0, y: 5.0, z: 6)])
         let end = VPointerVectorVec.createVPointer(b: b, v: path)
         b.finish(offset: end)
-        XCTAssertEqual(b.sizedArray, [12, 0, 0, 0, 8, 0, 8, 0, 0, 0, 4, 0, 8, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 128, 64, 0, 0, 160, 64, 0, 0, 192, 64])
+        XCTAssertEqual(b.sizedByteArray, [12, 0, 0, 0, 8, 0, 8, 0, 0, 0, 4, 0, 8, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 128, 64, 0, 0, 160, 64, 0, 0, 192, 64])
     }
 
     func testCreatingVectorStructWithForcedDefaults() {
@@ -37,15 +37,15 @@ final class FlatBuffersStructsTests: XCTestCase {
         let path = b.createVector(structs: [Vec_Write(x: 1, y: 2, z: 3), Vec_Write(x: 4.0, y: 5.0, z: 6)])
         let end = VPointerVectorVec.createVPointer(b: b, v: path)
         b.finish(offset: end)
-        XCTAssertEqual(b.sizedArray, [12, 0, 0, 0, 8, 0, 12, 0, 4, 0, 8, 0, 8, 0, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 128, 64, 0, 0, 160, 64, 0, 0, 192, 64])
+        XCTAssertEqual(b.sizedByteArray, [12, 0, 0, 0, 8, 0, 12, 0, 4, 0, 8, 0, 8, 0, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 128, 64, 0, 0, 160, 64, 0, 0, 192, 64])
     }
 
     func testCreatingEnums() {
         let b = FlatBuffersBuilder(initialSize: 20)
-        let path = b.createVector(structs: [Vec_Write(x: 1, y: 2, z: 3), Vec_Write(x: 4.0, y: 5.0, z: 6)])
+        let path = b.createVector(structs: [Vec_Write(x: 1, y: 2, z: 3), Vec_Write(x: 4, y: 5, z: 6)])
         let end = VPointerVectorVec.createVPointer(b: b, color: .blue, v: path)
         b.finish(offset: end)
-        XCTAssertEqual(b.sizedArray, [12, 0, 0, 0, 8, 0, 12, 0, 4, 0, 8, 0, 8, 0, 0, 0, 2, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 128, 64, 0, 0, 160, 64, 0, 0, 192, 64])
+        XCTAssertEqual(b.sizedByteArray, [12, 0, 0, 0, 8, 0, 12, 0, 4, 0, 8, 0, 8, 0, 0, 0, 2, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 128, 64, 0, 0, 160, 64, 0, 0, 192, 64])
     }
 
     func testReadingStructWithEnums() {
@@ -54,7 +54,7 @@ final class FlatBuffersStructsTests: XCTestCase {
         let o = Vec2.createVec2(b, v: vec)
         let end = VPointerVec2.createVPointer(b: b, o: o, type: .vec)
         b.finish(offset: end)
-        let buffer = b.sizedArray
+        let buffer = b.sizedByteArray
         XCTAssertEqual(buffer, [16, 0, 0, 0, 0, 0, 10, 0, 12, 0, 12, 0, 11, 0, 4, 0, 10, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 1, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 0, 0])
         let point = VPointerVec2.getRootAsCountry(FlatBuffer(bytes: buffer))
         XCTAssertEqual(point.vec?.c, vec._c)

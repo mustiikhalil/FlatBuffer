@@ -1,6 +1,3 @@
-//
-//  FlatbufferError.swift
-
 import Foundation
 
 public enum FlatbufferError: Error {

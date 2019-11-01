@@ -1,10 +1,3 @@
-//
-//  File.swift
-//  
-//
-//  Created by Mustafa Khalil on 10/28/19.
-//
-
 import Foundation
 
 public struct Struct {
