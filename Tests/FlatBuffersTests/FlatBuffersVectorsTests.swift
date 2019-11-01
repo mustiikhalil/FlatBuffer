@@ -20,9 +20,9 @@ final class FlatBuffersVectors: XCTestCase {
     func testCreateIntArray() {
         let numbers: [Int32] = [1, 2, 3, 4, 5]
         let b = FlatBuffersBuilder(initialSize: 20)
-        let o = b.createVector(numbers, size: Int32(numbers.count))
+        let o = b.createVector(numbers, size: numbers.count)
         b.finish(offset: o)
-        XCTAssertEqual(b.sizedArray, [ 4, 0, 0, 0, 5, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0])
+        XCTAssertEqual(b.sizedArray, [4, 0, 0, 0, 5, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0])
     }
     
     func testCreateVectorOfStrings() {
@@ -44,5 +44,65 @@ final class FlatBuffersVectors: XCTestCase {
         let end = b.createVector(ofOffsets: v)
         b.finish(offset: end)
         XCTAssertEqual(b.sizedArray, [4, 0, 0, 0, 4, 0, 0, 0, 28, 0, 0, 0, 12, 0, 0, 0, 20, 0, 0, 0, 4, 0, 0, 0, 7, 0, 0, 0, 68, 101, 110, 109, 97, 114, 107, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0])
+    }
+    
+    func testReadInt32Array() {
+        let data: [Int32] = [1, 2, 3, 4, 5]
+        let b = FlatBuffersBuilder(initialSize: 20)
+        let v = Numbers.createNumbersVector(b: b, array: data)
+        let end = Numbers.createNumbers(b: b, o: v)
+        b.finish(offset: end)
+        let number = Numbers.getRootAsNumbers(FlatBuffer(bytes: b.sizedArray))
+        XCTAssertEqual(number.vArrayInt32, [1, 2, 3, 4, 5])
+    }
+    
+    func testReadDoubleArray() {
+        let data: [Double] = [1, 2, 3, 4, 5]
+        let b = FlatBuffersBuilder(initialSize: 20)
+        let v = Numbers.createNumbersVector(b: b, array: data)
+        let end = Numbers.createNumbers(b: b, o: v)
+        b.finish(offset: end)
+        let number = Numbers.getRootAsNumbers(FlatBuffer(bytes: b.sizedArray))
+        XCTAssertEqual(number.vArrayDouble, [1, 2, 3, 4, 5])
+    }
+}
+
+struct Numbers {
+    
+    private var __t: Table
+    
+    private init(_ t: Table) {
+        __t = t
+    }
+    
+    @inlinable static func getRootAsNumbers(_ bb: FlatBuffer) -> Numbers {
+        return Numbers(Table(bb: bb, position: Int32(bb.read(def: UOffset.self, position: 0))))
+    }
+    
+    var vArrayInt: [Int] { return __t.getVector(at: 4) }
+    var vArrayInt32: [Int32] { return __t.getVector(at: 4) }
+    var vArrayDouble: [Double] { return __t.getVector(at: 4) }
+    var vArrayFloat: [Float32] { return __t.getVector(at: 4) }
+    
+    static func createNumbersVector(b: FlatBuffersBuilder, array: [Int]) -> Offset<UOffset> {
+        return b.createVector(array, size: array.count)
+    }
+    
+    static func createNumbersVector(b: FlatBuffersBuilder, array: [Int32]) -> Offset<UOffset> {
+        return b.createVector(array, size: array.count)
+    }
+    
+    static func createNumbersVector(b: FlatBuffersBuilder, array: [Double]) -> Offset<UOffset> {
+        return b.createVector(array, size: array.count)
+    }
+    
+    static func createNumbersVector(b: FlatBuffersBuilder, array: [Float32]) -> Offset<UOffset> {
+        return b.createVector(array, size: array.count)
+    }
+    
+    static func createNumbers(b: FlatBuffersBuilder, o: Offset<UOffset>) -> Offset<UOffset> {
+        let start = b.startTable(with: 1)
+        b.add(offset: o, at: 0)
+        return Offset(offset: b.endTable(at: start))
     }
 }

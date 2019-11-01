@@ -35,16 +35,10 @@ class CountryDouble {
     
     private var table: Table
     
-    public var lan: Double { get {
-        let o = table.offset(Int32(Country.offsets.lan))
-        return o != 0 ? table._bb.read(def: Double.self, position: Int(o + table._postion), with: MemoryLayout<Double>.size) : 0
-        }
-    }
-    
     private init(table t: Table) { table = t }
     
     static func getRootAsCountry(_ bb: FlatBuffer) -> CountryDouble {
-        let pos = bb.read(def: Int32.self, position: Int(bb.size), with: MemoryLayout<Int32>.size)
+        let pos = bb.read(def: Int32.self, position: Int(bb.size))
         return CountryDouble(table: Table(bb: bb, position: Int32(pos)))
     }
     
@@ -53,7 +47,7 @@ class CountryDouble {
     }
     
     static func createCountry(builder: inout FlatBuffersBuilder, offset: Offset<String>, log: Double, lan: Double) -> Offset<Country> {
-        let _start = builder.startTable(s: 3)
+        let _start = builder.startTable(with: 3)
         CountryDouble.add(builder: &builder, lng: log)
         CountryDouble.add(builder: &builder, lan: lan)
         CountryDouble.add(builder: &builder, name: offset)

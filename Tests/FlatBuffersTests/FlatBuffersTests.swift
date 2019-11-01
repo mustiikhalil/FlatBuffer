@@ -26,10 +26,10 @@ final class FlatBuffersTests: XCTestCase {
     
     func testStartTable() {
         let b = FlatBuffersBuilder(initialSize: 16)
-        XCTAssertNoThrow(b.startTable(s: 0))
+        XCTAssertNoThrow(b.startTable(with: 0))
         b.clear()
         XCTAssertEqual(b.create(string: country).o, 12)
-        XCTAssertEqual(b.startTable(s: 0), 12)
+        XCTAssertEqual(b.startTable(with: 0), 12)
     }
     
     func testCreate() {
@@ -54,25 +54,34 @@ final class FlatBuffersTests: XCTestCase {
         let v: [UInt8] = [44, 0, 0, 0, 16, 0, 0, 0, 0, 0, 10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 12, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
         XCTAssertEqual(b.sizedArray, v)
     }
+    
+    func testReadCountry() {
+        let v: [UInt8] = [16, 0, 0, 0, 0, 0, 10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 12, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
+        let buffer = FlatBuffer(bytes: v)
+        let c = Country.getRootAsCountry(buffer)
+        XCTAssertEqual(c.lan, 100)
+        XCTAssertEqual(c.log, 200)
+        XCTAssertEqual(c.nameVector, [78, 111, 114, 119, 97, 121])
+        XCTAssertEqual(c.name, country)
+    }
 }
 
 class Country {
     
     static let offsets: (name: VOffset, lan: VOffset, lng: VOffset) = (0, 1, 2)
+    private var __t: Table
     
-    private var table: Table
-    
-    public var lan: Int { get {
-        let o = table.offset(Int32(Country.offsets.lan))
-        return o != 0 ? Int(table._bb.read(def: Int32.self, position: Int(o + table._postion), with: MemoryLayout<Int32>.size)) : 0
-        }
+    private init(_ t: Table) {
+        __t = t
     }
     
-    private init(table t: Table) { table = t }
+    var lan: Int32 { let o = __t.offset(6); return o == 0 ? 0 : __t.readBuffer(of: Int32.self, offset: o) }
+    var log: Int32 { let o = __t.offset(8); return o == 0 ? 0 : __t.readBuffer(of: Int32.self, offset: o) }
+    var nameVector: [UInt8] { return __t.getVector(at: 4) }
+    var name: String? { let o = __t.offset(4); return o == 0 ? nil : __t.string(at: o) }
     
     @inlinable static func getRootAsCountry(_ bb: FlatBuffer) -> Country {
-        let pos = bb.read(def: Int32.self, position: Int(bb.size), with: MemoryLayout<Int32>.size)
-        return Country(table: Table(bb: bb, position: Int32(pos)))
+        return Country(Table(bb: bb, position: Int32(bb.read(def: UOffset.self, position: 0))))
     }
     
     @inlinable static func createCountry(builder: inout FlatBuffersBuilder, name: String, log: Int32, lan: Int32) -> Offset<Country> {
@@ -80,7 +89,7 @@ class Country {
     }
     
     @inlinable static func createCountry(builder: inout FlatBuffersBuilder, offset: Offset<String>, log: Int32, lan: Int32) -> Offset<Country> {
-        let _start = builder.startTable(s: 3)
+        let _start = builder.startTable(with: 3)
         Country.add(builder: &builder, lng: log)
         Country.add(builder: &builder, lan: lan)
         Country.add(builder: &builder, name: offset)
