@@ -5,7 +5,7 @@ final class FlatBuffersTests: XCTestCase {
 
     let country = "Norway"
     
-    func testEndian() { print("endian test: ", CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue)) }
+    func testEndian() { XCTAssertEqual(isLitteEndian, true) }
 
     func testOffset() {
         let o = Offset<Int>()
@@ -36,7 +36,7 @@ final class FlatBuffersTests: XCTestCase {
         var b = FlatBuffersBuilder(initialSize: 16)
         _ = Country.createCountry(builder: &b, name: country, log: 200, lan: 100)
         let v: [UInt8] = [10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 12, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
-        XCTAssertEqual(b.sizedArray, v)
+        XCTAssertEqual(b.sizedByteArray, v)
     }
     
     func testCreateFinish() {
@@ -44,7 +44,7 @@ final class FlatBuffersTests: XCTestCase {
         let countryOff = Country.createCountry(builder: &b, name: country, log: 200, lan: 100)
         b.finish(offset: countryOff)
         let v: [UInt8] = [16, 0, 0, 0, 0, 0, 10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 12, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
-        XCTAssertEqual(b.sizedArray, v)
+        XCTAssertEqual(b.sizedByteArray, v)
     }
     
     func testCreateFinishWithPrefix() {
@@ -52,7 +52,7 @@ final class FlatBuffersTests: XCTestCase {
         let countryOff = Country.createCountry(builder: &b, name: country, log: 200, lan: 100)
         b.finish(offset: countryOff, addPrefix: true)
         let v: [UInt8] = [44, 0, 0, 0, 16, 0, 0, 0, 0, 0, 10, 0, 16, 0, 4, 0, 8, 0, 12, 0, 10, 0, 0, 0, 12, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
-        XCTAssertEqual(b.sizedArray, v)
+        XCTAssertEqual(b.sizedByteArray, v)
     }
     
     func testReadCountry() {

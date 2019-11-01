@@ -78,9 +78,9 @@ public final class FlatBuffer {
     }
     
     ///
-    /// - Parameter pointer:
-    /// - Parameter len:
-    func write<T>(value: T, len: Int, index: Int) {
+    /// - Parameter value:
+    /// - Parameter index:
+    func write<T>(value: T, index: Int) {
         _memory.storeBytes(of: value, toByteOffset: _capacity - index, as: T.self)
     }
     
@@ -116,6 +116,12 @@ public final class FlatBuffer {
         _writerSize = 0
         _memory.deallocate()
         _memory = UnsafeMutableRawPointer.allocate(byteCount: _capacity, alignment: alignment)
+    }
+    
+    ///
+    /// - Parameter size:
+    internal func resize(_ size: Int) {
+        _writerSize = size
     }
     
     public func read<T>(def: T.Type, position: Int) -> T {
