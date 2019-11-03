@@ -4,6 +4,7 @@
 import Foundation
 
 let isLitteEndian = CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue)
+let fileIdConstant = 4
 
 public typealias Byte = UInt8
 public typealias UOffset = UInt32

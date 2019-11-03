@@ -9,7 +9,9 @@ public enum FlatbufferError: Error {
     endTableCalledBeforeStart,
     calledSizedBinaryBeforeFinish,
     endianCheck,
-    outOfRange
+    outOfRange,
+    fieldRequired,
+    fileIdCount
 }
 
 extension FlatbufferError: LocalizedError {
@@ -42,6 +44,12 @@ extension FlatbufferError: LocalizedError {
             
         case .outOfRange:
             return "Out of the table range"
+        
+        case .fieldRequired:
+            return "Flatbuffers require the following field"
+            
+        case .fileIdCount:
+            return "Flatbuffers requires file id to be 4"
         }
     }
 }
