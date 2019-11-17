@@ -79,10 +79,10 @@ struct Numbers {
         return Numbers(Table(bb: bb, position: Int32(bb.read(def: UOffset.self, position: 0))))
     }
     
-    var vArrayInt: [Int] { return __t.getVector(at: 4) }
-    var vArrayInt32: [Int32] { return __t.getVector(at: 4) }
-    var vArrayDouble: [Double] { return __t.getVector(at: 4) }
-    var vArrayFloat: [Float32] { return __t.getVector(at: 4) }
+    var vArrayInt: [Int]? { return __t.getVector(at: 4) }
+    var vArrayInt32: [Int32]? { return __t.getVector(at: 4) }
+    var vArrayDouble: [Double]? { return __t.getVector(at: 4) }
+    var vArrayFloat: [Float32]? { return __t.getVector(at: 4) }
     
     static func createNumbersVector(b: FlatBuffersBuilder, array: [Int]) -> Offset<UOffset> {
         return b.createVector(array, size: array.count)

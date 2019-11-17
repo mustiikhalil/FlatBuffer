@@ -77,7 +77,7 @@ class Country {
     
     var lan: Int32 { let o = __t.offset(6); return o == 0 ? 0 : __t.readBuffer(of: Int32.self, offset: o) }
     var log: Int32 { let o = __t.offset(8); return o == 0 ? 0 : __t.readBuffer(of: Int32.self, offset: o) }
-    var nameVector: [UInt8] { return __t.getVector(at: 4) }
+    var nameVector: [UInt8]? { return __t.getVector(at: 4) }
     var name: String? { let o = __t.offset(4); return o == 0 ? nil : __t.string(at: o) }
     
     @inlinable static func getRootAsCountry(_ bb: FlatBuffer) -> Country {

@@ -70,6 +70,34 @@ public final class FlatBuffersBuilder {
 
 extension FlatBuffersBuilder {
     
+    ///
+    /// - Parameters:
+    ///   - table:
+    ///   - fields:
+    public func require(table: Offset<UOffset>, fields: [Int32]) {
+        for field in fields {
+            let start = _bb.capacity - Int(table.o)
+            let startTable = start - Int(_bb.read(def: Int32.self, position: start))
+            let isOkay = _bb.read(def: VOffset.self, position: startTable + Int(field)) != 0
+            if !isOkay {
+                fatalError("\(FlatbufferError.fieldRequired.errorDescription ?? "") \(field)")
+            }
+        }
+    }
+    
+    ///
+    /// - Parameters:
+    ///   - offset:
+    ///   - fileId:
+    ///   - prefix:
+    public func finish<T>(offset: Offset<T>, fileId: String, addPrefix prefix: Bool = false) {
+        let size = MemoryLayout<UOffset>.size
+        preAlign(len: Int32(size + (prefix ? size : 0) + fileIdConstant), alignment: _minAlignment)
+        guard fileId.count == fileIdConstant else { fatalError(FlatbufferError.fileIdCount.errorDescription ?? "") }
+        _bb.push(string: fileId, len: 4)
+        finish(offset: offset, addPrefix: prefix)
+    }
+    
     /// Description
     /// - Parameter offset: offset description
     /// - Parameter prefix: prefix description
@@ -101,13 +129,21 @@ extension FlatBuffersBuilder {
         let tableObjectSize = vTableOffset - startOffset
         guard tableObjectSize < 0x10000 else { fatalError(FlatbufferError.growBeyondTwoGB.errorDescription ?? "") }
         
-        for i in _vtable.lazy.reversed() {
-            let off = i == 0 ? 0 : vTableOffset - i
+        var writeIndex = 0
+        for (index,j) in _vtable.lazy.reversed().enumerated() {
+            if j != 0 {
+                writeIndex = _vtable.count - index
+                break
+            }
+        }
+        
+        for i in stride(from: writeIndex - 1, to: -1, by: -1) {
+            let off = _vtable[i] == 0 ? 0 : vTableOffset - _vtable[i]
             _bb.push(value: VOffset(off), len: sizeofVoffset)
         }
         
         _bb.push(value: VOffset(tableObjectSize), len: sizeofVoffset)
-        _bb.push(value: (UInt16(_vtable.count + 2) * UInt16(sizeofVoffset)), len: sizeofVoffset)
+        _bb.push(value: (UInt16(writeIndex + 2) * UInt16(sizeofVoffset)), len: sizeofVoffset)
         
         clearOffsets()
         let vt_use = _bb.size
@@ -130,14 +166,10 @@ extension FlatBuffersBuilder {
         if let offset = isAlreadyAdded {
             let vTableOff = Int(vTableOffset)
             let space = _bb.capacity - vTableOff
-            let pointer = _bb.capacity - (Int(_bb.size) - space)
-            let resizedBuffer = pointer + 4
-            _bb.write(value: Int32(offset - vTableOff),
-                      index: resizedBuffer)
-            _bb.resize(resizedBuffer)
+            _bb.write(value: Int32(offset - vTableOff), index: space, direct: true)
+            _bb.resize(_bb.capacity - space)
         } else {
-            _bb.write(value: Int32(vt_use) - Int32(vTableOffset),
-                      index: Int(vTableOffset))
+            _bb.write(value: Int32(vt_use) - Int32(vTableOffset), index: Int(vTableOffset))
             _vtables.append(_bb.size)
         }
         isNested = false
@@ -232,6 +264,12 @@ extension FlatBuffersBuilder {
     
     ///
     /// - Parameter elements:
+    public func createVector<T: Scalar>(_ elements: [T]) -> Offset<UOffset> {
+        return createVector(elements, size: elements.count)
+    }
+    
+    ///
+    /// - Parameter elements:
     /// - Parameter size:
     public func createVector<T: Scalar>(_ elements: [T], size: Int) -> Offset<UOffset> {
         let size = Int32(size)
@@ -268,12 +306,15 @@ extension FlatBuffersBuilder {
     }
     
     ///
-    /// - Parameter structs:
-    public func createVector<T: Writeable>(structs: [T]) -> Offset<UOffset> {
-        let size = MemoryLayout<T>.size
-        startVector(Int32(structs.count * size), elementSize: MemoryLayout<T>.alignment)
+    /// - Parameters:
+    ///   - structs:
+    ///   - size:
+    ///   - alignment:
+    ///   - type:
+    public func createVector<T: Readable>(structs: [UnsafeMutableRawPointer], size: Int, alignment: Int, type: T.Type) -> Offset<UOffset> {
+        startVector(Int32(structs.count * size), elementSize: alignment)
         for i in structs.lazy.reversed() {
-            _bb.push(struct: i, len: size)
+            create(struct: i, type: T.self)
         }
         return Offset(offset: endVector(len: Int32(structs.count)))
     }
@@ -285,13 +326,14 @@ extension FlatBuffersBuilder {
 extension FlatBuffersBuilder {
     
     ///
-    /// - Parameter s:
-    /// - Parameter index:
+    /// - Parameters:
+    ///   - s:
+    ///   - type:
     @discardableResult
-    public func create<T: Writeable>(struct s: T) -> Offset<UOffset> {
-        let size = Int32(MemoryLayout<T>.size)
-        preAlign(len: size, alignment: Int32(MemoryLayout<T>.alignment))
-        _bb.push(struct: s, len: Int(size))
+    public func create<T: Readable>(struct s: UnsafeMutableRawPointer, type: T.Type) -> Offset<UOffset> {
+        let size = T.size
+        preAlign(len: Int32(size), alignment: Int32(T.alignment))
+        _bb.push(struct: s, size: size)
         return Offset(offset: _bb.size)
     }
     
@@ -360,6 +402,19 @@ extension FlatBuffersBuilder {
             return
         }
         let off = push(element: element)
+        track(offset: off, at: position)
+    }
+    
+    ///
+    /// - Parameter e:
+    /// - Parameter def:
+    /// - Parameter position:
+    public func add(condition: Bool, def: Bool, at position: VOffset) {
+        if (condition == def && !serializeDefaults) {
+            track(offset: 0, at: position)
+            return
+        }
+        let off = push(element: Byte(condition ? 1 : 0))
         track(offset: off, at: position)
     }
     

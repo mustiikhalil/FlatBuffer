@@ -2,8 +2,9 @@ import XCTest
 @testable import FlatBuffers
 
 final class FlatBuffersUnionTests: XCTestCase {
-    
+
     func testCreateMonstor() {
+
         var b = FlatBuffersBuilder(initialSize: 20)
         let dmg: Int16 = 5
         let str = "Axe"
@@ -26,7 +27,7 @@ final class FlatBuffersUnionTests: XCTestCase {
         XCTAssertEqual(p?.name, str)
         XCTAssertEqual(p?.nameVector, [65, 120, 101])
     }
-    
+
     func testEndTableFinish() {
         var builder = FlatBuffersBuilder(initialSize: 20)
         let sword = builder.create(string: "Sword")
@@ -37,12 +38,12 @@ final class FlatBuffersUnionTests: XCTestCase {
         let inventory: [UInt8] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         let inv = builder.createVector(inventory, size: 10)
         let weapons = builder.createVector(ofOffsets: [weaponOne, weaponTwo])
-        var vecArray: [Vec_Write] = []
-        vecArray.append(Vec_Write(x: 4.0, y: 5.0, z: 6.0))
-        vecArray.append(Vec_Write(x: 1.0, y: 2.0, z: 3.0))
-        let path = builder.createVector(structs: vecArray)
+        var vecArray: [UnsafeMutableRawPointer] = []
+        vecArray.append(createVecWrite(x: 4.0, y: 5.0, z: 6.0))
+        vecArray.append(createVecWrite(x: 1.0, y: 2.0, z: 3.0))
+        let path = builder.createVector(structs: vecArray, size: Vec.size, alignment: Vec.alignment, type: Vec.self)
         let orc = FinalMonster.createMonster(builder: &builder,
-                                             position: builder.create(struct: Vec_Write(x: 1.0, y: 2.0, z: 3.0)),
+                                             position: builder.create(struct: createVecWrite(x: 1.0, y: 2.0, z: 3.0), type: Vec.self),
                                              hp: 300,
                                              name: name,
                                              inventory: inv,
@@ -61,7 +62,7 @@ enum Equipment: Byte { case none, Weapon }
 enum Color3: Int8 { case red = 0, green, blue}
 
 struct FinalMonster {
-    
+
     @inlinable static func createMonster(builder: inout FlatBuffersBuilder,
                                          position: Offset<UOffset>,
                                          hp: Int16,
@@ -87,22 +88,22 @@ struct FinalMonster {
 }
 
 struct Monster {
-    
+
     private var __t: Table
-    
+
     init(_ fb: FlatBuffer, o: Int32) { __t = Table(bb: fb, position: o) }
     init(_ t: Table) { __t = t }
-    
+
     func weapon(at index: Int32) -> Weapon? { let o = __t.offset(4); return o == 0 ? nil : Weapon.assign(__t.indirect(__t.vector(at: o) + (index * 4)), __t.bb) }
-    
+
     func equiped<T: FlatBufferObject>() -> T? {
         let o = __t.offset(8); return o == 0 ? nil : __t.union(o)
     }
-    
+
     static func getRootAsMonster(bb: FlatBuffer) -> Monster {
         return Monster(Table(bb: bb, position: Int32(bb.read(def: UOffset.self, position: 0))))
     }
-    
+
     @inlinable static func createMonster(builder: inout FlatBuffersBuilder,
                                          offset: Offset<UOffset>,
                                          equipment: Equipment = .none,
@@ -117,34 +118,34 @@ struct Monster {
 
 
 struct Weapon: FlatBufferObject {
-    
+
     static let offsets: (name: VOffset, dmg: VOffset) = (0, 1)
     private var __t: Table
-    
+
     init(_ t: Table) { __t = t }
     init(_ fb: FlatBuffer, o: Int32) { __t = Table(bb: fb, position: o)}
-    
+
     var dmg: Int16 { let o = __t.offset(6); return o == 0 ? 0 : __t.readBuffer(of: Int16.self, offset: o) }
-    var nameVector: [UInt8] { return __t.getVector(at: 4) }
+    var nameVector: [UInt8]? { return __t.getVector(at: 4) }
     var name: String? { let o = __t.offset(4); return o == 0 ? nil : __t.string(at: o) }
-    
+
     static func assign(_ i: Int32, _ bb: FlatBuffer) -> Weapon { return Weapon(Table(bb: bb, position: i)) }
-    
+
     @inlinable static func createWeapon(builder: inout FlatBuffersBuilder, offset: Offset<String>, dmg: Int16) -> Offset<Weapon> {
         let _start = builder.startTable(with: 2)
         Weapon.add(builder: &builder, name: offset)
         Weapon.add(builder: &builder, dmg: dmg)
         return Weapon.end(builder: &builder, startOffset: _start)
     }
-    
+
     @inlinable static func end(builder: inout FlatBuffersBuilder, startOffset: UOffset) -> Offset<Weapon> {
         return Offset(offset: builder.endTable(at: startOffset))
     }
-    
+
     @inlinable static func add(builder: inout FlatBuffersBuilder, name: Offset<String>) {
         builder.add(offset: name, at: Weapon.offsets.name)
     }
-    
+
     @inlinable static func add(builder: inout FlatBuffersBuilder, dmg: Int16) {
         builder.add(element: dmg, def: 0, at: Weapon.offsets.dmg)
     }
