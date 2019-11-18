@@ -62,7 +62,6 @@ public final class FlatBuffersBuilder {
         _numOfFields = 0
         objectStart = 0
         _vtable = []
-        stringOffsetMap = [:]
     }
 }
 
