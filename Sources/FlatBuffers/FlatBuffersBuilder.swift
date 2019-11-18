@@ -357,6 +357,9 @@ extension FlatBuffersBuilder {
         preAlign(len: Int32(len) + 1, type: UOffset.self)
         _bb.fill(padding: 1)
         _bb.push(string: str, len: len)
+        debug(str: "Memory")
+        print(_minAlignment)
+        print(UOffset(len))
         push(element: UOffset(len))
         return Offset(offset: _bb.size)
     }

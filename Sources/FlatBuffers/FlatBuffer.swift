@@ -46,6 +46,7 @@ public final class FlatBuffer {
     /// Constructor that creates a Flatbuffer instance with a size
     /// - Parameter size: Length of the buffer
     init(initialSize size: Int) {
+        let size = size.convertToPowerofTwo
         _memory = UnsafeMutableRawPointer.allocate(byteCount: size, alignment: alignment)
         _memory.initializeMemory(as: UInt8.self, repeating: 0, count: size)
         _capacity = size
@@ -145,6 +146,10 @@ public final class FlatBuffer {
         while _capacity <= _writerSize + Int(size) {
             _capacity = _capacity << 1
         }
+        
+        /// solution take from Apple-NIO
+        _capacity = _capacity.convertToPowerofTwo
+        
         let newData = UnsafeMutableRawPointer.allocate(byteCount: _capacity, alignment: alignment)
         newData.initializeMemory(as: UInt8.self, repeating: 0, count: _capacity)
         newData.advanced(by: writerIndex).copyMemory(from: _memory.advanced(by: currentWritingIndex), byteCount: _writerSize)
