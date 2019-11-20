@@ -1,9 +1,11 @@
 import Foundation
 
+/// All the errors that are used in the implementation and their Description
 public enum FlatbufferError: Error {
     case sizeIsZeroOrLess,
     nestedSerializationNotAllowed,
     serializingWithoutCallingStartVector,
+    serializingWithoutCallingStartTable,
     growBeyondTwoGB,
     invalidFieldNumber,
     endTableCalledBeforeStart,
@@ -20,6 +22,9 @@ extension FlatbufferError: LocalizedError {
         switch self {
         case .nestedSerializationNotAllowed:
             return "Object serialization must not be nested"
+            
+        case .serializingWithoutCallingStartTable:
+            return "Calling endtable without calling starttable"
             
         case .serializingWithoutCallingStartVector:
             return "Calling endVector without calling startVector"

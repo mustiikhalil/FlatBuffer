@@ -41,7 +41,7 @@ final class FlatBuffersUnionTests: XCTestCase {
         var vecArray: [UnsafeMutableRawPointer] = []
         vecArray.append(createVecWrite(x: 4.0, y: 5.0, z: 6.0))
         vecArray.append(createVecWrite(x: 1.0, y: 2.0, z: 3.0))
-        let path = builder.createVector(structs: vecArray, size: Vec.size, alignment: Vec.alignment, type: Vec.self)
+        let path = builder.createVector(structs: vecArray, type: Vec.self)
         let orc = FinalMonster.createMonster(builder: &builder,
                                              position: builder.create(struct: createVecWrite(x: 1.0, y: 2.0, z: 3.0), type: Vec.self),
                                              hp: 300,

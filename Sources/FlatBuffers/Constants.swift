@@ -1,26 +1,32 @@
-//
-//  Constants.swift
-
 import Foundation
 
+/// A boolean to see if the system is littleEndian
 let isLitteEndian = CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue)
+/// Constant for the file id length
 let fileIdConstant = 4
-
+/// Type aliases
 public typealias Byte = UInt8
 public typealias UOffset = UInt32
 public typealias SOffset = Int32
 public typealias VOffset = UInt16
+/// Maximum size for a buffer
 public let FlatBufferMaxSize = UInt32.max << ((MemoryLayout<SOffset>.size * 8 - 1) - 1)
 
+/// Protocol that confirms all the numbers
+///
+/// Scalar is used to confirm all the numbers that can be represented in a FlatBuffer. It's used to write/read from the buffer.
 public protocol Scalar: Equatable {
     associatedtype NumericValue
     var convertedEndian: NumericValue { get }
 }
 
 extension Scalar where Self: FixedWidthInteger {
+    /// Converts the value from BigEndian to LittleEndian
+    ///
+    /// Converts values to little endian on machines that work with BigEndian, however this is NOT TESTED yet.
     public var convertedEndian: NumericValue {
         if isLitteEndian { return self as! Self.NumericValue }
-        return self.littleEndian as! Self.NumericValue
+        fatalError("This is not tested! please report an issue on the offical flatbuffers repo")
     }
 }
 
@@ -32,6 +38,7 @@ extension Double: Scalar {
         return self.bitPattern.littleEndian
     }
 }
+
 extension Float: Scalar {
     public typealias NumericValue = UInt32
     
