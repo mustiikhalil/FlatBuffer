@@ -17,7 +17,7 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
         let _data = FlatBuffer(data: data)
         readMonster(fb: _data)
     }
-
+    
     func testCreateMonster() {
         let bytes = createMonster(withPrefix: false)
         XCTAssertEqual(bytes.sizedByteArray, [48, 0, 0, 0, 77, 79, 78, 83, 0, 0, 0, 0, 36, 0, 72, 0, 40, 0, 0, 0, 38, 0, 32, 0, 0, 0, 28, 0, 0, 0, 27, 0, 20, 0, 16, 0, 12, 0, 4, 0, 0, 0, 0, 0, 0, 0, 11, 0, 36, 0, 0, 0, 164, 0, 0, 0, 0, 0, 0, 1, 60, 0, 0, 0, 68, 0, 0, 0, 76, 0, 0, 0, 0, 0, 0, 1, 88, 0, 0, 0, 120, 0, 0, 0, 0, 0, 80, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 64, 2, 0, 5, 0, 6, 0, 0, 0, 2, 0, 0, 0, 64, 0, 0, 0, 48, 0, 0, 0, 2, 0, 0, 0, 30, 0, 40, 0, 10, 0, 20, 0, 152, 255, 255, 255, 4, 0, 0, 0, 4, 0, 0, 0, 70, 114, 101, 100, 0, 0, 0, 0, 5, 0, 0, 0, 0, 1, 2, 3, 4, 0, 0, 0, 5, 0, 0, 0, 116, 101, 115, 116, 50, 0, 0, 0, 5, 0, 0, 0, 116, 101, 115, 116, 49, 0, 0, 0, 9, 0, 0, 0, 77, 121, 77, 111, 110, 115, 116, 101, 114, 0, 0, 0, 3, 0, 0, 0, 20, 0, 0, 0, 36, 0, 0, 0, 4, 0, 0, 0, 240, 255, 255, 255, 32, 0, 0, 0, 248, 255, 255, 255, 36, 0, 0, 0, 12, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 12, 0, 0, 0, 28, 0, 0, 0, 5, 0, 0, 0, 87, 105, 108, 109, 97, 0, 0, 0, 6, 0, 0, 0, 66, 97, 114, 110, 101, 121, 0, 0, 5, 0, 0, 0, 70, 114, 111, 100, 111, 0, 0, 0])
@@ -104,7 +104,7 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
         //            Assert.IsTrue(monster.TestarrayoftablesByKey("Frodo") != null);
         //            Assert.IsTrue(monster.TestarrayoftablesByKey("Barney") != null);
         //            Assert.IsTrue(monster.TestarrayoftablesByKey("Wilma") != null);
-
+        
         XCTAssertEqual(monster.testType, .Monster)
         XCTAssertEqual(monster.mutate(testType: .NONE), true)
         XCTAssertEqual(monster.testType, .NONE)
@@ -116,7 +116,7 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
         XCTAssertEqual(monster.mutate(inventory: 3, at: 2), true)
         XCTAssertEqual(monster.mutate(inventory: 4, at: 3), true)
         XCTAssertEqual(monster.mutate(inventory: 5, at: 4), true)
-
+        
         for i in 0..<monster.inventoryCount {
             XCTAssertEqual(monster.inventory(at: i), Byte(i + 1))
         }
@@ -130,9 +130,12 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
         let vec = monster.pos
         XCTAssertEqual(vec?.x, 1)
         XCTAssertTrue(vec?.mutate(x: 55.0) ?? false)
+        XCTAssertTrue(vec?.mutate(test1: 55) ?? false)
         XCTAssertEqual(vec?.x, 55.0)
+        XCTAssertEqual(vec?.test1, 55.0)
         XCTAssertTrue(vec?.mutate(x: 1) ?? false)
         XCTAssertEqual(vec?.x, 1)
+        XCTAssertTrue(vec?.mutate(test1: 3) ?? false)
     }
     
     func readMonster(fb: FlatBuffer) {
@@ -253,6 +256,7 @@ struct Vec3: Readable {
     func mutate(x: Float32) -> Bool { return __s.mutate(x, index: 0) }
     func mutate(y: Float32) -> Bool { return __s.mutate(y, index: 4) }
     func mutate(z: Float32) -> Bool { return __s.mutate(z, index: 8) }
+    func mutate(test1: Double) -> Bool { return __s.mutate(test1, index: 16) }
     
     var test1: Double { return __s.readBuffer(of: Double.self, at: 16) }
     var color: Color_1 { return Color_1(rawValue: __s.readBuffer(of: Int8.self, at: 24)) ?? .green }
@@ -262,14 +266,14 @@ struct Vec3: Readable {
 struct Monster_1: FlatBufferObject {
     
     var __t: Table
-
+    
     init(_ fb: FlatBuffer, o: Int32) { __t = Table(bb: fb, position: o) }
     init(_ t: Table) { __t = t }
     
     static func getRootAsMonster(bb: FlatBuffer) -> Monster_1 {
         return Monster_1(Table(bb: bb, position: Int32(bb.read(def: UOffset.self, position: bb.reader)) + Int32(bb.reader)))
     }
-
+    
     public var pos: Vec3? { let o = __t.offset(4); return o == 0 ? nil : Vec3(__t.bb, o: o + __t.postion) }
     public var hp: Int16 { let o = __t.offset(8); return o == 0 ? 100 : __t.readBuffer(of: Int16.self, offset: o) }
     public var mana: Int16 { let o = __t.offset(6); return o == 0 ? 150 : __t.readBuffer(of: Int16.self, offset: o) }
@@ -286,7 +290,7 @@ struct Monster_1: FlatBufferObject {
     public func mutate(testType t: Type) -> Bool { let o = __t.offset(18); return __t.mutate(t.rawValue, index: o) }
     
     public func Test<T: FlatBufferObject>(type: T.Type) -> T? { let o = __t.offset(20); return o == 0 ? nil : __t.union(o) }
-
+    
     public var test4Count: Int32 { let o = __t.offset(22); return o == 0 ? 0 : __t.vector(count: o) }
     public func test4(at index: Int32) -> Test1? { let o = __t.offset(22); return o == 0 ? nil : Test1(__t.bb, o: __t.vector(at: o) + index * 4) }
     
@@ -325,13 +329,13 @@ struct Monster_1: FlatBufferObject {
     static func addHp(_ fbb: FlatBuffersBuilder, _ hp: Int16) { fbb.add(element: hp, def: 100, at: 2) }
     
     static func addInv(_ fbb: FlatBuffersBuilder, offset: Offset<UOffset>) { fbb.add(offset: offset, at: 5) }
-
+    
     static func addTestArrayOfStrings(_ fbb: FlatBuffersBuilder, offset: Offset<UOffset>) { fbb.add(offset: offset, at: 10) }
     
     static func addBool(_ fbb: FlatBuffersBuilder, condition: Bool) { fbb.add(condition: condition, def: false, at: 15) }
     
     static func addName(_ fbb: FlatBuffersBuilder, offset: Offset<String>) { fbb.add(offset: offset, at: 3) }
-    static func createTest(structs: [UnsafeMutableRawPointer], _ fbb: FlatBuffersBuilder) -> Offset<UOffset> { return fbb.createVector(structs: structs, size: Test1.size, alignment: Test1.alignment, type: Test1.self) }
+    static func createTest(structs: [UnsafeMutableRawPointer], _ fbb: FlatBuffersBuilder) -> Offset<UOffset> { return fbb.createVector(structs: structs, type: Test1.self) }
     
     static func create(inventory: [Byte], _ fbb: FlatBuffersBuilder) -> Offset<UOffset> { fbb.createVector(inventory, size: inventory.count + 1) }
     static func sortVectorOfMonsters(_ fbb: FlatBuffersBuilder, offsets: [Offset<UOffset>]) -> Offset<UOffset> {

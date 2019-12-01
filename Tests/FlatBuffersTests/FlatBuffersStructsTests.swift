@@ -26,7 +26,7 @@ final class FlatBuffersStructsTests: XCTestCase {
     
     func testCreatingVectorStruct() {
         let b = FlatBuffersBuilder(initialSize: 20)
-        let path = b.createVector(structs: [createVecWrite(x: 1, y: 2, z: 3), createVecWrite(x: 4.0, y: 5.0, z: 6)], size: Vec.size, alignment: Vec.alignment, type: Vec.self)
+        let path = b.createVector(structs: [createVecWrite(x: 1, y: 2, z: 3), createVecWrite(x: 4.0, y: 5.0, z: 6)], type: Vec.self)
         let end = VPointerVectorVec.createVPointer(b: b, v: path)
         b.finish(offset: end)
         XCTAssertEqual(b.sizedByteArray, [12, 0, 0, 0, 8, 0, 8, 0, 0, 0, 4, 0, 8, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 128, 64, 0, 0, 160, 64, 0, 0, 192, 64])
@@ -34,7 +34,7 @@ final class FlatBuffersStructsTests: XCTestCase {
     
     func testCreatingVectorStructWithForcedDefaults() {
         let b = FlatBuffersBuilder(initialSize: 20, serializeDefaults: true)
-        let path = b.createVector(structs: [createVecWrite(x: 1, y: 2, z: 3), createVecWrite(x: 4.0, y: 5.0, z: 6)], size: Vec.size, alignment: Vec.alignment, type: Vec.self)
+        let path = b.createVector(structs: [createVecWrite(x: 1, y: 2, z: 3), createVecWrite(x: 4.0, y: 5.0, z: 6)], type: Vec.self)
         let end = VPointerVectorVec.createVPointer(b: b, v: path)
         b.finish(offset: end)
         XCTAssertEqual(b.sizedByteArray, [12, 0, 0, 0, 8, 0, 12, 0, 4, 0, 8, 0, 8, 0, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 128, 64, 0, 0, 160, 64, 0, 0, 192, 64])
@@ -42,7 +42,7 @@ final class FlatBuffersStructsTests: XCTestCase {
     
     func testCreatingEnums() {
         let b = FlatBuffersBuilder(initialSize: 20)
-        let path = b.createVector(structs: [createVecWrite(x: 1, y: 2, z: 3), createVecWrite(x: 4, y: 5, z: 6)], size: Vec.size, alignment: Vec.alignment, type: Vec.self)
+        let path = b.createVector(structs: [createVecWrite(x: 1, y: 2, z: 3), createVecWrite(x: 4, y: 5, z: 6)], type: Vec.self)
         let end = VPointerVectorVec.createVPointer(b: b, color: .blue, v: path)
         b.finish(offset: end)
         XCTAssertEqual(b.sizedByteArray, [12, 0, 0, 0, 8, 0, 12, 0, 4, 0, 8, 0, 8, 0, 0, 0, 2, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 128, 64, 0, 0, 160, 64, 0, 0, 192, 64])
