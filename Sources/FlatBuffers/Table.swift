@@ -41,7 +41,7 @@ public struct Table {
     /// - Parameters:
     ///   - type: Type of Scalar that needs to be read from the buffer
     ///   - o: Offset of the Element
-    public func readBuffer<T: Scalar>(of type: T.Type, offset o: Int32) -> T {
+    public func readBuffer<T: Scalar>(of type: T.Type, at o: Int32) -> T {
         return directRead(of: T.self, offset: o + _postion)
     }
     

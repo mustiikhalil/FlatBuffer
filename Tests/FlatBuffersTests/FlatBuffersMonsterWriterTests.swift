@@ -275,20 +275,21 @@ struct Monster_1: FlatBufferObject {
     }
     
     public var pos: Vec3? { let o = __t.offset(4); return o == 0 ? nil : Vec3(__t.bb, o: o + __t.postion) }
-    public var hp: Int16 { let o = __t.offset(8); return o == 0 ? 100 : __t.readBuffer(of: Int16.self, offset: o) }
-    public var mana: Int16 { let o = __t.offset(6); return o == 0 ? 150 : __t.readBuffer(of: Int16.self, offset: o) }
+    public var hp: Int16 { let o = __t.offset(8); return o == 0 ? 100 : __t.readBuffer(of: Int16.self, at: o) }
+    public var mana: Int16 { let o = __t.offset(6); return o == 0 ? 150 : __t.readBuffer(of: Int16.self, at: o) }
     public func mutate(mana m: Int16) -> Bool { let o = __t.offset(6); return __t.mutate(m, index: o) }
     
     public var inventoryCount: Int32 { let o = __t.offset(14); return o == 0 ? 0 : __t.vector(count: o) }
     public func inventory(at index: Int32) -> Byte { let o = __t.offset(14); return o == 0 ? 0 : __t.directRead(of: Byte.self, offset: __t.vector(at: o) + index * 1) }
     public func mutate(inventory: Byte, at index: Int32) -> Bool { let o = __t.offset(14); return __t.directMutate(inventory, index: __t.vector(at: o) + index * 1) }
-    
     public var name: String? { let o = __t.offset(10); return o == 0 ? nil : __t.string(at: o) }
     public var nameSegmentArray: [UInt8]? { return __t.getVector(at: 10) }
     
-    public var testType: Type { let o = __t.offset(18); return o == 0 ? .NONE : Type(rawValue: __t.readBuffer(of: Byte.self, offset: o)) ?? .NONE }
+    public var testType: Type { let o = __t.offset(18); return o == 0 ? .NONE : Type(rawValue: __t.readBuffer(of: Byte.self, at: o)) ?? .NONE }
     public func mutate(testType t: Type) -> Bool { let o = __t.offset(18); return __t.mutate(t.rawValue, index: o) }
     
+    
+    public func test<T: FlatBufferObject>(type: T.Type) -> T? { let o = __t.offset(20); return o == 0 ? nil : __t.union(o) }
     public func Test<T: FlatBufferObject>(type: T.Type) -> T? { let o = __t.offset(20); return o == 0 ? nil : __t.union(o) }
     
     public var test4Count: Int32 { let o = __t.offset(22); return o == 0 ? 0 : __t.vector(count: o) }
@@ -300,7 +301,7 @@ struct Monster_1: FlatBufferObject {
     public var testArrayOfBoolsCount: Int32 { let o = __t.offset(52); return o == 0 ? 0 : __t.vector(count: o) }
     public var testArrayOfBools: [Byte] { return __t.getVector(at: 52) ?? [] }
     
-    public var testBool: Bool { let o = __t.offset(34); return o == 0 ? false : 0 != __t.readBuffer(of: Byte.self, offset: o) }
+    public var testBool: Bool { let o = __t.offset(34); return o == 0 ? false : 0 != __t.readBuffer(of: Byte.self, at: o) }
     
     public var testArrayOfTablesCount: Int32 { let o = __t.offset(26); return o == 0 ? 0 : __t.vector(count: o) }
     public func testArrayOfTables(at index: Int32) -> Monster_1? { let o = __t.offset(26); return o == 0 ? nil : Monster_1(__t.bb, o: __t.indirect(__t.vector(at: o) + index * 4)) }

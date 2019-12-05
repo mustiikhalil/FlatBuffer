@@ -125,7 +125,7 @@ struct Weapon: FlatBufferObject {
     init(_ t: Table) { __t = t }
     init(_ fb: FlatBuffer, o: Int32) { __t = Table(bb: fb, position: o)}
 
-    var dmg: Int16 { let o = __t.offset(6); return o == 0 ? 0 : __t.readBuffer(of: Int16.self, offset: o) }
+    var dmg: Int16 { let o = __t.offset(6); return o == 0 ? 0 : __t.readBuffer(of: Int16.self, at: o) }
     var nameVector: [UInt8]? { return __t.getVector(at: 4) }
     var name: String? { let o = __t.offset(4); return o == 0 ? nil : __t.string(at: o) }
 

@@ -164,7 +164,7 @@ struct VPointerVec2 {
     }
     
     var vec: Vec2? { let o = __t.offset(4); return o == 0 ? nil : Vec2( __t.bb, o: o + __t.postion) }
-    var UType: Test? { let o = __t.offset(6); return o == 0 ? Test.none : Test(rawValue: __t.readBuffer(of: Byte.self, offset: o)) }
+    var UType: Test? { let o = __t.offset(6); return o == 0 ? Test.none : Test(rawValue: __t.readBuffer(of: Byte.self, at: o)) }
     
     @inlinable static func getRootAsCountry(_ bb: FlatBuffer) -> VPointerVec2 {
         return VPointerVec2(Table(bb: bb, position: Int32(bb.read(def: UOffset.self, position: 0))))
