@@ -1,4 +1,8 @@
+#if os(Linux)
+import CoreFoundation
+#else
 import Foundation
+#endif
 
 /// A boolean to see if the system is littleEndian
 let isLitteEndian = CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue)
