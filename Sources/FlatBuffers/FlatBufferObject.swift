@@ -41,7 +41,7 @@ extension Mutable where Self == Table {
     /// - Parameters:
     ///   - value: New value to be inserted to the buffer
     ///   - index: index of the Element
-    func mutate<T: Scalar>(_ value: T, index: Int32) -> Bool {
+    public func mutate<T: Scalar>(_ value: T, index: Int32) -> Bool {
         guard index != 0 else { return false }
         return mutate(value: value, o: index + postion)
     }
@@ -52,7 +52,7 @@ extension Mutable where Self == Table {
     /// - Parameters:
     ///   - value: New value to be inserted to the buffer
     ///   - index: index of the Element
-    func directMutate<T: Scalar>(_ value: T, index: Int32) -> Bool {
+    public func directMutate<T: Scalar>(_ value: T, index: Int32) -> Bool {
         return mutate(value: value, o: index)
     }
 }
@@ -63,7 +63,7 @@ extension Mutable where Self == Struct {
     /// - Parameters:
     ///   - value: New value to be inserted to the buffer
     ///   - index: index of the Element
-    func mutate<T: Scalar>(_ value: T, index: Int32) -> Bool {
+    public func mutate<T: Scalar>(_ value: T, index: Int32) -> Bool {
         return mutate(value: value, o: index + postion)
     }
     
@@ -73,7 +73,7 @@ extension Mutable where Self == Struct {
     /// - Parameters:
     ///   - value: New value to be inserted to the buffer
     ///   - index: index of the Element
-    func directMutate<T: Scalar>(_ value: T, index: Int32) -> Bool {
+    public func directMutate<T: Scalar>(_ value: T, index: Int32) -> Bool {
         return mutate(value: value, o: index)
     }
 }
