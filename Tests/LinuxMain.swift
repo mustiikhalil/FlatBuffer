@@ -3,5 +3,6 @@ import XCTest
 import FlatBuffersTests
 
 var tests = [XCTestCaseEntry]()
-tests += FlatBuffersTests.allTests()
+tests += FlatBuffersTests.__allTests()
+
 XCTMain(tests)
