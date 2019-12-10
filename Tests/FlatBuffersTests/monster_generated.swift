@@ -189,6 +189,25 @@ struct Referrable: FlatBufferObject {
         off.sort { Table.compare(Table.offset(Int32($1.o), vOffset: 4, fbb: fbb.buffer), Table.offset(Int32($0.o), vOffset: 4, fbb: fbb.buffer), fbb: fbb.buffer) < 0 }
         return fbb.createVector(ofOffsets: off)
     }
+    public static func lookupByKey(vector: Int32, key: UInt64, fbb: FlatBuffer) -> Referrable? {
+        var span = fbb.read(def: Int32.self, position: Int(vector - 4))
+        var start: Int32 = 0
+        while span != 0 {
+            var middle = span / 2
+            let tableOffset = Table.indirect(vector + 4 * (start + middle), fbb)
+            let comp = fbb.read(def: UInt64.self, position: Int(Table.offset(Int32(fbb.capacity) - tableOffset, vOffset: 4, fbb: fbb)))
+            if comp > 0 {
+                span = middle
+            } else if comp < 0 {
+                middle += 1
+                start += middle
+                span -= middle
+            } else {
+                return Referrable(fbb, o: tableOffset)
+            }
+        }
+        return nil
+    }
 }
 
 struct Monster: FlatBufferObject {
@@ -221,6 +240,7 @@ struct Monster: FlatBufferObject {
     public func testarrayofstring(at index: Int32) -> String? { let o = _accessor.offset(24); return o == 0 ? nil : _accessor.directString(at: _accessor.vector(at: o) + index * 4) }
     public var testarrayoftablesCount: Int32 { let o = _accessor.offset(26); return o == 0 ? 0 : _accessor.vector(count: o) }
     public func testarrayoftables(at index: Int32) -> MyGame.Example.Monster? { let o = _accessor.offset(26); return o == 0 ? nil : MyGame.Example.Monster(_accessor.bb, o: _accessor.indirect(_accessor.vector(at: o) + index * 4)) }
+    public func testarrayoftablesBy(key: String) -> MyGame.Example.Monster? { let o = _accessor.offset(26); return o == 0 ? nil : MyGame.Example.Monster.lookupByKey(vector: _accessor.vector(at: o), key: key, fbb: _accessor.bb) }
     public var enemy: MyGame.Example.Monster? { let o = _accessor.offset(28); return o == 0 ? nil : MyGame.Example.Monster(_accessor.bb, o: _accessor.indirect(o + _accessor.postion)) }
     public var testnestedflatbufferCount: Int32 { let o = _accessor.offset(30); return o == 0 ? 0 : _accessor.vector(count: o) }
     public func testnestedflatbuffer(at index: Int32) -> UInt8 { let o = _accessor.offset(30); return o == 0 ? 0 : _accessor.directRead(of: UInt8.self, offset: _accessor.vector(at: o) + index * 1) }
@@ -276,6 +296,7 @@ struct Monster: FlatBufferObject {
     public var parent_namespace_test: MyGame.InParentNamespace? { let o = _accessor.offset(72); return o == 0 ? nil : MyGame.InParentNamespace(_accessor.bb, o: _accessor.indirect(o + _accessor.postion)) }
     public var vector_of_referrablesCount: Int32 { let o = _accessor.offset(74); return o == 0 ? 0 : _accessor.vector(count: o) }
     public func vector_of_referrables(at index: Int32) -> MyGame.Example.Referrable? { let o = _accessor.offset(74); return o == 0 ? nil : MyGame.Example.Referrable(_accessor.bb, o: _accessor.indirect(_accessor.vector(at: o) + index * 4)) }
+    public func vector_of_referrablesBy(key: UInt64) -> MyGame.Example.Referrable? { let o = _accessor.offset(74); return o == 0 ? nil : MyGame.Example.Referrable.lookupByKey(vector: _accessor.vector(at: o), key: key, fbb: _accessor.bb) }
     public var single_weak_reference: UInt64 { let o = _accessor.offset(76); return o == 0 ? 0 : _accessor.readBuffer(of: UInt64.self, at: o) }
     public func mutate(single_weak_reference: UInt64) -> Bool {let o = _accessor.offset(76);  return _accessor.mutate(single_weak_reference, index: o) }
     public var vector_of_weak_referencesCount: Int32 { let o = _accessor.offset(78); return o == 0 ? 0 : _accessor.vector(count: o) }
@@ -284,6 +305,7 @@ struct Monster: FlatBufferObject {
     public func mutate(vector_of_weak_references: UInt64, at index: Int32) -> Bool { let o = _accessor.offset(78); return _accessor.directMutate(vector_of_weak_references, index: _accessor.vector(at: o) + index * 8) }
     public var vector_of_strong_referrablesCount: Int32 { let o = _accessor.offset(80); return o == 0 ? 0 : _accessor.vector(count: o) }
     public func vector_of_strong_referrables(at index: Int32) -> MyGame.Example.Referrable? { let o = _accessor.offset(80); return o == 0 ? nil : MyGame.Example.Referrable(_accessor.bb, o: _accessor.indirect(_accessor.vector(at: o) + index * 4)) }
+    public func vector_of_strong_referrablesBy(key: UInt64) -> MyGame.Example.Referrable? { let o = _accessor.offset(80); return o == 0 ? nil : MyGame.Example.Referrable.lookupByKey(vector: _accessor.vector(at: o), key: key, fbb: _accessor.bb) }
     public var co_owning_reference: UInt64 { let o = _accessor.offset(82); return o == 0 ? 0 : _accessor.readBuffer(of: UInt64.self, at: o) }
     public func mutate(co_owning_reference: UInt64) -> Bool {let o = _accessor.offset(82);  return _accessor.mutate(co_owning_reference, index: o) }
     public var vector_of_co_owning_referencesCount: Int32 { let o = _accessor.offset(84); return o == 0 ? 0 : _accessor.vector(count: o) }
@@ -358,6 +380,26 @@ struct Monster: FlatBufferObject {
         var off = offsets
         off.sort { Table.compare(Table.offset(Int32($1.o), vOffset: 10, fbb: fbb.buffer), Table.offset(Int32($0.o), vOffset: 10, fbb: fbb.buffer), fbb: fbb.buffer) < 0 }
         return fbb.createVector(ofOffsets: off)
+    }
+    public static func lookupByKey(vector: Int32, key: String, fbb: FlatBuffer) -> Monster? {
+        let key = key.utf8.map { $0 }
+        var span = fbb.read(def: Int32.self, position: Int(vector - 4))
+        var start: Int32 = 0
+        while span != 0 {
+            var middle = span / 2
+            let tableOffset = Table.indirect(vector + 4 * (start + middle), fbb)
+            let comp = Table.compare(Table.offset(Int32(fbb.capacity) - tableOffset, vOffset: 10, fbb: fbb), key, fbb: fbb)
+            if comp > 0 {
+                span = middle
+            } else if comp < 0 {
+                middle += 1
+                start += middle
+                span -= middle
+            } else {
+                return Monster(fbb, o: tableOffset)
+            }
+        }
+        return nil
     }
 }
 

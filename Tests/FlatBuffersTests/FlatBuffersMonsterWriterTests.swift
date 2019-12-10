@@ -107,10 +107,10 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
         XCTAssertEqual(monster.testarrayoftables(at: 1)?.name, "Frodo")
         XCTAssertEqual(monster.testarrayoftables(at: 2)?.name, "Wilma")
 
-        //            // Example of searching for a table by the key
-        //            Assert.IsTrue(monster.TestarrayoftablesByKey("Frodo") != null);
-        //            Assert.IsTrue(monster.TestarrayoftablesByKey("Barney") != null);
-        //            Assert.IsTrue(monster.TestarrayoftablesByKey("Wilma") != null);
+        // Example of searching for a table by the key
+        XCTAssertNotNil(monster.testarrayoftablesBy(key: "Frodo"))
+        XCTAssertNotNil(monster.testarrayoftablesBy(key: "Barney"))
+        XCTAssertNotNil(monster.testarrayoftablesBy(key: "Wilma"))
 
         XCTAssertEqual(monster.test_type, .monster)
         XCTAssertEqual(monster.mutate(test_type: .none), true)
