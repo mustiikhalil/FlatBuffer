@@ -10,7 +10,7 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
     
     func testData() {
         let data = Data([48, 0, 0, 0, 77, 79, 78, 83, 0, 0, 0, 0, 36, 0, 72, 0, 40, 0, 0, 0, 38, 0, 32, 0, 0, 0, 28, 0, 0, 0, 27, 0, 20, 0, 16, 0, 12, 0, 4, 0, 0, 0, 0, 0, 0, 0, 11, 0, 36, 0, 0, 0, 164, 0, 0, 0, 0, 0, 0, 1, 60, 0, 0, 0, 68, 0, 0, 0, 76, 0, 0, 0, 0, 0, 0, 1, 88, 0, 0, 0, 120, 0, 0, 0, 0, 0, 80, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 64, 2, 0, 5, 0, 6, 0, 0, 0, 2, 0, 0, 0, 64, 0, 0, 0, 48, 0, 0, 0, 2, 0, 0, 0, 30, 0, 40, 0, 10, 0, 20, 0, 152, 255, 255, 255, 4, 0, 0, 0, 4, 0, 0, 0, 70, 114, 101, 100, 0, 0, 0, 0, 5, 0, 0, 0, 0, 1, 2, 3, 4, 0, 0, 0, 5, 0, 0, 0, 116, 101, 115, 116, 50, 0, 0, 0, 5, 0, 0, 0, 116, 101, 115, 116, 49, 0, 0, 0, 9, 0, 0, 0, 77, 121, 77, 111, 110, 115, 116, 101, 114, 0, 0, 0, 3, 0, 0, 0, 20, 0, 0, 0, 36, 0, 0, 0, 4, 0, 0, 0, 240, 255, 255, 255, 32, 0, 0, 0, 248, 255, 255, 255, 36, 0, 0, 0, 12, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 12, 0, 0, 0, 28, 0, 0, 0, 5, 0, 0, 0, 87, 105, 108, 109, 97, 0, 0, 0, 6, 0, 0, 0, 66, 97, 114, 110, 101, 121, 0, 0, 5, 0, 0, 0, 70, 114, 111, 100, 111, 0, 0, 0])
-        let _data = FlatBuffer(data: data)
+        let _data = ByteBuffer(data: data)
         readMonster(fb: _data)
     }
 
@@ -18,7 +18,7 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
         let path = FileManager.default.currentDirectoryPath
         let url = URL(fileURLWithPath: path, isDirectory: true).appendingPathComponent("monsterdata_test").appendingPathExtension("mon")
         guard let data = try? Data(contentsOf: url) else { return }
-        let _data = FlatBuffer(data: data)
+        let _data = ByteBuffer(data: data)
         readMonster(fb: _data)
     }
     
@@ -33,7 +33,7 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
     func testCreateMonsterResizedBuffer() {
         let bytes = createMonster(withPrefix: false)
         XCTAssertEqual(bytes.sizedByteArray, [48, 0, 0, 0, 77, 79, 78, 83, 0, 0, 0, 0, 36, 0, 72, 0, 40, 0, 0, 0, 38, 0, 32, 0, 0, 0, 28, 0, 0, 0, 27, 0, 20, 0, 16, 0, 12, 0, 4, 0, 0, 0, 0, 0, 0, 0, 11, 0, 36, 0, 0, 0, 164, 0, 0, 0, 0, 0, 0, 1, 60, 0, 0, 0, 68, 0, 0, 0, 76, 0, 0, 0, 0, 0, 0, 1, 88, 0, 0, 0, 120, 0, 0, 0, 0, 0, 80, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 64, 2, 0, 5, 0, 6, 0, 0, 0, 2, 0, 0, 0, 64, 0, 0, 0, 48, 0, 0, 0, 2, 0, 0, 0, 30, 0, 40, 0, 10, 0, 20, 0, 152, 255, 255, 255, 4, 0, 0, 0, 4, 0, 0, 0, 70, 114, 101, 100, 0, 0, 0, 0, 5, 0, 0, 0, 0, 1, 2, 3, 4, 0, 0, 0, 5, 0, 0, 0, 116, 101, 115, 116, 50, 0, 0, 0, 5, 0, 0, 0, 116, 101, 115, 116, 49, 0, 0, 0, 9, 0, 0, 0, 77, 121, 77, 111, 110, 115, 116, 101, 114, 0, 0, 0, 3, 0, 0, 0, 20, 0, 0, 0, 36, 0, 0, 0, 4, 0, 0, 0, 240, 255, 255, 255, 32, 0, 0, 0, 248, 255, 255, 255, 36, 0, 0, 0, 12, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 12, 0, 0, 0, 28, 0, 0, 0, 5, 0, 0, 0, 87, 105, 108, 109, 97, 0, 0, 0, 6, 0, 0, 0, 66, 97, 114, 110, 101, 121, 0, 0, 5, 0, 0, 0, 70, 114, 111, 100, 111, 0, 0, 0])
-        readMonster(fb: FlatBuffer(data: Data(bytes.sizedByteArray)))
+        readMonster(fb: ByteBuffer(data: bytes.data))
     }
 
     func testCreateMonsterPrefixed() {
@@ -43,16 +43,16 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
         let newBuf = FlatBuffersUtils.removeSizePrefix(bb: bytes.buffer)
         readMonster(fb: newBuf)
         let monster = Monster1.getRootAsMonster(bb: newBuf)
-        let secondaryBuf = FlatBuffer(bytes: bytes.sizedByteArray)
-        _ = monster.mutate(test_type: .none)
+        let secondaryBuf = ByteBuffer(bytes: bytes.sizedByteArray)
+        _ = monster.mutate(testType: .none)
         let sBuf = FlatBuffersUtils.removeSizePrefix(bb: secondaryBuf)
         readMonster(fb: sBuf)
-        _ = monster.mutate(test_type: .monster)
+        _ = monster.mutate(testType: .monster)
         readMonster(fb: newBuf)
     }
 
-    func createMonster(withPrefix prefix: Bool) -> FlatBuffersBuilder {
-        let fbb = FlatBuffersBuilder(initialSize: 1)
+    func createMonster(withPrefix prefix: Bool) -> FlatBufferBuilder {
+        let fbb = FlatBufferBuilder(initialSize: 1)
         let names = [fbb.create(string: "Frodo"), fbb.create(string: "Barney"), fbb.create(string: "Wilma")]
         var offsets: [Offset<UOffset>] = []
         let start1 = Monster1.startMonster(fbb)
@@ -70,8 +70,8 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
         let str = fbb.create(string: "MyMonster")
         let test1 = fbb.create(string: "test1")
         let test2 = fbb.create(string: "test2")
-        let _inv: [Byte] = [1, 2, 3, 4]
-        let inv = fbb.createVector(_inv, size: _inv.count + 1)
+        let _inv: [Byte] = [0, 1, 2, 3, 4]
+        let inv = fbb.createVector(_inv)
 
         let fred = fbb.create(string: "Fred")
         let mon1Start = Monster1.startMonster(fbb)
@@ -89,7 +89,7 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
         Monster1.add(hp: 80, fbb)
         Monster1.add(name: str, fbb)
         Monster1.add(inventory: inv, fbb)
-        Monster1.add(test_type: .monster, fbb)
+        Monster1.add(testType: .monster, fbb)
         Monster1.add(test: mon2, fbb)
         Monster1.add(test4: test4, fbb)
         Monster1.add(testarrayofstring: stringTestVector, fbb)
@@ -100,7 +100,7 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
         return fbb
     }
 
-    func mutateMonster(fb: FlatBuffer) {
+    func mutateMonster(fb: ByteBuffer) {
         let monster = Monster1.getRootAsMonster(bb: fb)
         XCTAssertFalse(monster.mutate(mana: 10))
         XCTAssertEqual(monster.testarrayoftables(at: 0)?.name, "Barney")
@@ -112,11 +112,11 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
         XCTAssertNotNil(monster.testarrayoftablesBy(key: "Barney"))
         XCTAssertNotNil(monster.testarrayoftablesBy(key: "Wilma"))
 
-        XCTAssertEqual(monster.test_type, .monster)
-        XCTAssertEqual(monster.mutate(test_type: .none), true)
-        XCTAssertEqual(monster.test_type, .none)
-        XCTAssertEqual(monster.mutate(test_type: .monster), true)
-        XCTAssertEqual(monster.test_type, .monster)
+        XCTAssertEqual(monster.testType, .monster)
+        XCTAssertEqual(monster.mutate(testType: .none), true)
+        XCTAssertEqual(monster.testType, .none)
+        XCTAssertEqual(monster.mutate(testType: .monster), true)
+        XCTAssertEqual(monster.testType, .monster)
 
         XCTAssertEqual(monster.mutate(inventory: 1, at: 0), true)
         XCTAssertEqual(monster.mutate(inventory: 2, at: 1), true)
@@ -145,7 +145,7 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
         XCTAssertTrue(vec?.mutate(test1: 3) ?? false)
     }
 
-    func readMonster(fb: FlatBuffer) {
+    func readMonster(fb: ByteBuffer) {
         let monster = Monster1.getRootAsMonster(bb: fb)
         XCTAssertEqual(monster.hp, 80)
         XCTAssertEqual(monster.mana, 150)
@@ -159,13 +159,13 @@ class FlatBuffersMonsterWriterTests: XCTestCase {
         let test = pos?.test3
         XCTAssertEqual(test?.a, 5)
         XCTAssertEqual(test?.b, 6)
-        XCTAssertEqual(monster.test_type, .monster)
+        XCTAssertEqual(monster.testType, .monster)
         let monster2 = monster.test(type: Monster1.self)
         XCTAssertEqual(monster2?.name, "Fred")
         
-        XCTAssertEqual(monster.mutate(test_type: .none), true)
-        XCTAssertNotEqual(monster.test_type, .monster)
-        XCTAssertEqual(monster.mutate(test_type: .monster), true)
+        XCTAssertEqual(monster.mutate(testType: .none), true)
+        XCTAssertNotEqual(monster.testType, .monster)
+        XCTAssertEqual(monster.mutate(testType: .monster), true)
         XCTAssertEqual(monster.mutate(mana: 10), false)
         
         XCTAssertEqual(monster.mana, 150)

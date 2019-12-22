@@ -7,7 +7,7 @@ import Foundation
 /// A boolean to see if the system is littleEndian
 let isLitteEndian = CFByteOrderGetCurrent() == Int(CFByteOrderLittleEndian.rawValue)
 /// Constant for the file id length
-let fileIdConstant = 4
+let FileIdLength = 4
 /// Type aliases
 public typealias Byte = UInt8
 public typealias UOffset = UInt32
@@ -43,7 +43,7 @@ extension Double: Scalar {
     }
 }
 
-extension Float: Scalar {
+extension Float32: Scalar {
     public typealias NumericValue = UInt32
     
     public var convertedEndian: UInt32 {

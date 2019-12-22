@@ -1,6 +1,6 @@
 import Foundation
 
-public final class FlatBuffer {
+public final class ByteBuffer {
     
     /// pointer to the start of the buffer object in memory
     private var _memory: UnsafeMutableRawPointer
@@ -99,7 +99,9 @@ public final class FlatBuffer {
     ///   - len: Offset to subtract from the WriterIndex
     func push<T: Scalar>(value: T, len: Int) {
         ensureSpace(size: UInt8(len))
-        _memory.storeBytes(of: value.convertedEndian, toByteOffset: writerIndex - len, as: T.NumericValue.self)
+        _memory.storeBytes(of: value.convertedEndian,
+                           toByteOffset: writerIndex - len,
+                           as: T.NumericValue.self)
         _writerSize += len
     }
     
@@ -135,7 +137,7 @@ public final class FlatBuffer {
     @discardableResult
     func ensureSpace(size: UInt8) -> UInt8 {
         if Int(size) + _writerSize > _capacity { reallocate(size) }
-        assert(size < FlatBufferMaxSize, FlatbufferError.growBeyondTwoGB.errorDescription ?? "FB doesn't support more than 2GB")
+        assert(size < FlatBufferMaxSize, "Buffer can't grow beyond 2 Gigabytes")
         return size
     }
     
@@ -152,7 +154,9 @@ public final class FlatBuffer {
         
         let newData = UnsafeMutableRawPointer.allocate(byteCount: _capacity, alignment: alignment)
         newData.initializeMemory(as: UInt8.self, repeating: 0, count: _capacity)
-        newData.advanced(by: writerIndex).copyMemory(from: _memory.advanced(by: currentWritingIndex), byteCount: _writerSize)
+        newData
+            .advanced(by: writerIndex)
+            .copyMemory(from: _memory.advanced(by: currentWritingIndex), byteCount: _writerSize)
         _memory.deallocate()
         _memory = newData
     }
@@ -191,8 +195,10 @@ public final class FlatBuffer {
     /// - Parameters:
     ///   - index: index of the object to be read from the buffer
     ///   - count: count of bytes in memory
-    public func readSlice<T>(index: Int32, count: Int32) -> [T] {
-        let array = UnsafeBufferPointer(start: _memory.advanced(by: Int(index)).assumingMemoryBound(to: T.self), count: Int(count))
+    public func readSlice<T>(index: Int32,
+                             count: Int32) -> [T] {
+        let start = _memory.advanced(by: Int(index)).assumingMemoryBound(to: T.self)
+        let array = UnsafeBufferPointer(start: start, count: Int(count))
         return Array(array)
     }
     
@@ -201,20 +207,24 @@ public final class FlatBuffer {
     ///   - index: index of the string in the buffer
     ///   - count: length of the string
     ///   - type: Encoding of the string
-    public func readString(at index: Int32, count: Int32, type: String.Encoding = .utf8) -> String? {
-        let bufprt = UnsafeBufferPointer(start: _memory.advanced(by: Int(index)).assumingMemoryBound(to: UInt8.self), count: Int(count))
+    public func readString(at index: Int32,
+                           count: Int32,
+                           type: String.Encoding = .utf8) -> String? {
+        let start = _memory.advanced(by: Int(index)).assumingMemoryBound(to: UInt8.self)
+        let bufprt = UnsafeBufferPointer(start: start, count: Int(count))
         return String(bytes: Array(bufprt), encoding: type)
     }
     
     /// Creates a new Flatbuffer object that's duplicated from the current one
     /// - Parameter removeBytes: the amount of bytes to remove from the current Size
-    public func duplicate(removing removeBytes: Int = 0) -> FlatBuffer {
-        return FlatBuffer(memory: _memory, count: _capacity, removing: _writerSize - removeBytes)
+    public func duplicate(removing removeBytes: Int = 0) -> ByteBuffer {
+        return ByteBuffer(memory: _memory, count: _capacity, removing: _writerSize - removeBytes)
     }
     
     #if DEBUG
     func debugMemory(str: String) {
-        let bufprt = UnsafeBufferPointer(start: _memory.assumingMemoryBound(to: UInt8.self), count: _capacity)
+        let bufprt = UnsafeBufferPointer(start: _memory.assumingMemoryBound(to: UInt8.self),
+                                         count: _capacity)
         let a = Array(bufprt)
         print(str, a, " \nwith buffer size: \(a.count) and writer size: \(_writerSize)")
     }

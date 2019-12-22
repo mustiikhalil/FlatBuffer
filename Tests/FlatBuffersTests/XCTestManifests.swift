@@ -62,6 +62,7 @@ extension FlatBuffersUnionTests {
     static let __allTests__FlatBuffersUnionTests = [
         ("testCreateMonstor", testCreateMonstor),
         ("testEndTableFinish", testEndTableFinish),
+        ("testEnumVector", testEnumVector),
     ]
 }
 

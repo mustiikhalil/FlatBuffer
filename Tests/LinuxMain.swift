@@ -1,8 +1,8 @@
 import XCTest
 
-import FlatBuffersTests
+import FlatBuffers_Test_SwiftTests
 
 var tests = [XCTestCaseEntry]()
-tests += FlatBuffersTests.__allTests()
+tests += FlatBuffers_Test_SwiftTests.__allTests()
 
 XCTMain(tests)

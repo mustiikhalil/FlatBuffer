@@ -2,7 +2,7 @@ import Foundation
 
 /// FlatbufferObject structures all the Flatbuffers objects
 public protocol FlatBufferObject {
-    init(_ bb: FlatBuffer, o: Int32)
+    init(_ bb: ByteBuffer, o: Int32)
 }
 
 /// Readable is structures all the Flatbuffers structs
@@ -14,10 +14,16 @@ public protocol Readable: FlatBufferObject {
     static var alignment: Int { get }
 }
 
+public protocol Enum {
+    associatedtype T: Scalar
+    static var byteSize: Int { get }
+    var value: T { get }
+}
+
 /// Mutable is a protocol that allows us to mutate Scalar values within the buffer
 public protocol Mutable {
     /// makes Flatbuffer accessed within the Protocol
-    var bb: FlatBuffer { get }
+    var bb: ByteBuffer { get }
     /// makes position of the table/struct  accessed within the Protocol
     var postion: Int32 { get }
 }
