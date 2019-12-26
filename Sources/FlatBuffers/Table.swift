@@ -64,6 +64,10 @@ public struct Table {
     
     public func union<T: FlatBufferObject>(_ o: Int32) -> T {
         let o = o + postion
+        return directUnion(o)
+    }
+
+    public func directUnion<T: FlatBufferObject>(_ o: Int32) -> T {
         return T.init(bb, o: o + bb.read(def: Int32.self, position: Int(o)))
     }
     

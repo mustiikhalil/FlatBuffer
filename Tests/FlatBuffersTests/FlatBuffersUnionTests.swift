@@ -71,6 +71,49 @@ final class FlatBuffersUnionTests: XCTestCase {
         XCTAssertEqual(monster.colors(at: 0), .blue)
         XCTAssertEqual(monster.colors(at: 1), .green)
     }
+    
+    func testUnionVector() {
+        let networkData: [UInt8] = [16, 0, 0, 0, 12, 0, 20, 0, 19, 0, 12, 0, 8, 0, 4, 0, 12, 0, 0, 0, 16, 0, 0, 0, 24, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 3, 2, 0, 0, 0, 36, 0, 0, 0, 16, 0, 0, 0, 2, 0, 0, 0, 3, 1, 6, 0, 10, 0, 4, 0, 6, 0, 0, 0, 20, 0, 0, 0, 0, 0, 6, 0, 8, 0, 4, 0, 6, 0, 0, 0, 16, 0, 0, 0, 4, 0, 0, 0, 48, 48, 48, 48, 0, 0, 0, 0, 17, 0, 0, 0, 101, 109, 97, 105, 108, 64, 101, 120, 97, 109, 112, 108, 101, 46, 99, 111, 109, 0, 0, 0]
+        let _email = "email@example.com"
+        let _number = "0000"
+        let fb = FlatBufferBuilder(initialSize: 1)
+        let email = fb.create(string: _email)
+        let number = fb.create(string: _number)
+        let emailStart = Email.startEmail(fb)
+        Email.add(value: email, fb)
+        let emailOffset = Email.endEmail(fb, start: emailStart)
+        
+        let telefonStart = Telefon.startTelefon(fb)
+        Telefon.add(number: number, fb)
+        let telefonOffset = Telefon.endTelefon(fb, start: telefonStart)
+        
+        let types: [Address] = [.email, .telefon]
+        let otherTypes = fb.createVector(types)
+        let otherAddress = fb.createVector(ofOffsets: [emailOffset, telefonOffset])
+        
+        let personStart = Person.startPerson(fb)
+        Person.add(mainAddressType: .email, fb)
+        Person.add(mainAddress: emailOffset, fb)
+        Person.add(otherAddressesType: otherTypes, fb)
+        Person.add(otherAddresses: otherAddress, fb)
+        let root = Person.endPerson(fb, start: personStart)
+        fb.finish(offset: root)
+        
+        let array = fb.sizedByteArray
+        XCTAssertEqual(array, networkData)
+        
+        let person = Person.getRootAsPerson(bb: ByteBuffer(bytes: networkData))
+        
+        XCTAssertEqual(person.mainAddressType, .email)
+        XCTAssertEqual(person.mainAddress(type: Email.self)?.value, _email)
+        
+        XCTAssertEqual(person.otherAddressesCount, 2)
+        XCTAssertEqual(person.otherAddressesTypeCount, 2)
+        XCTAssertEqual(person.otherAddressesType(at: 0), .email)
+        XCTAssertEqual(person.otherAddressesType(at: 1), .telefon)
+        XCTAssertEqual(person.otherAddresses(at: 0, type: Email.self)?.value, _email)
+        XCTAssertEqual(person.otherAddresses(at: 1, type: Telefon.self)?.number, _number)
+    }
 }
 
 public enum ColorsNameSpace {
@@ -191,3 +234,94 @@ struct Weapon: FlatBufferObject {
         builder.add(element: dmg, def: 0, at: Weapon.offsets.dmg)
     }
 }
+
+typealias Person = Contacts.Person
+typealias Address = Contacts.Address
+typealias Email = Contacts.Email
+typealias Telefon = Contacts.Telefon
+
+public enum Contacts {
+
+public enum Mood: Int8, Enum {
+    public typealias T = Int8
+    public static var byteSize: Int { return MemoryLayout<Int8>.size }
+    public var value: Int8 { return self.rawValue }
+    case good = 0, bad = 1, its_something = 2
+}
+
+public enum Address: UInt8, Enum {
+    public typealias T = UInt8
+    public static var byteSize: Int { return MemoryLayout<UInt8>.size }
+    public var value: UInt8 { return self.rawValue }
+    case none = 0, telefon = 1, urls = 2, email = 3
+}
+
+public struct Telefon: FlatBufferObject {
+    private var _accessor: Table
+    public static func getRootAsTelefon(bb: ByteBuffer) -> Telefon { return Telefon(Table(bb: bb, position: Int32(bb.read(def: UOffset.self, position: bb.reader)) + Int32(bb.reader))) }
+
+    private init(_ t: Table) { _accessor = t }
+    public init(_ bb: ByteBuffer, o: Int32) { _accessor = Table(bb: bb, position: o) }
+
+    public var number: String? { let o = _accessor.offset(4); return o == 0 ? nil : _accessor.string(at: o) }
+    public var numberSegmentArray: [UInt8]? { return _accessor.getVector(at: 4) }
+    public static func startTelefon(_ fbb: FlatBufferBuilder) -> UOffset { fbb.startTable(with: 1) }
+    public static func add(number: Offset<String>, _ fbb: FlatBufferBuilder) { fbb.add(offset: number, at: 0)  }
+    public static func endTelefon(_ fbb: FlatBufferBuilder, start: UOffset) -> Offset<UOffset> { let end = Offset<UOffset>(offset: fbb.endTable(at: start)); return end }
+}
+
+public struct URLs: FlatBufferObject {
+    private var _accessor: Table
+    public static func getRootAsURLs(bb: ByteBuffer) -> URLs { return URLs(Table(bb: bb, position: Int32(bb.read(def: UOffset.self, position: bb.reader)) + Int32(bb.reader))) }
+
+    private init(_ t: Table) { _accessor = t }
+    public init(_ bb: ByteBuffer, o: Int32) { _accessor = Table(bb: bb, position: o) }
+
+    public var value: String? { let o = _accessor.offset(4); return o == 0 ? nil : _accessor.string(at: o) }
+    public var valueSegmentArray: [UInt8]? { return _accessor.getVector(at: 4) }
+    public static func startURLs(_ fbb: FlatBufferBuilder) -> UOffset { fbb.startTable(with: 1) }
+    public static func add(value: Offset<String>, _ fbb: FlatBufferBuilder) { fbb.add(offset: value, at: 0)  }
+    public static func endURLs(_ fbb: FlatBufferBuilder, start: UOffset) -> Offset<UOffset> { let end = Offset<UOffset>(offset: fbb.endTable(at: start)); return end }
+}
+
+public struct Email: FlatBufferObject {
+    private var _accessor: Table
+    public static func getRootAsEmail(bb: ByteBuffer) -> Email { return Email(Table(bb: bb, position: Int32(bb.read(def: UOffset.self, position: bb.reader)) + Int32(bb.reader))) }
+
+    private init(_ t: Table) { _accessor = t }
+    public init(_ bb: ByteBuffer, o: Int32) { _accessor = Table(bb: bb, position: o) }
+
+    public var value: String? { let o = _accessor.offset(4); return o == 0 ? nil : _accessor.string(at: o) }
+    public var valueSegmentArray: [UInt8]? { return _accessor.getVector(at: 4) }
+    public static func startEmail(_ fbb: FlatBufferBuilder) -> UOffset { fbb.startTable(with: 1) }
+    public static func add(value: Offset<String>, _ fbb: FlatBufferBuilder) { fbb.add(offset: value, at: 0)  }
+    public static func endEmail(_ fbb: FlatBufferBuilder, start: UOffset) -> Offset<UOffset> { let end = Offset<UOffset>(offset: fbb.endTable(at: start)); return end }
+}
+
+public struct Person: FlatBufferObject {
+    private var _accessor: Table
+    public static func getRootAsPerson(bb: ByteBuffer) -> Person { return Person(Table(bb: bb, position: Int32(bb.read(def: UOffset.self, position: bb.reader)) + Int32(bb.reader))) }
+
+    private init(_ t: Table) { _accessor = t }
+    public init(_ bb: ByteBuffer, o: Int32) { _accessor = Table(bb: bb, position: o) }
+
+    public var mainAddressType: Contacts.Address { let o = _accessor.offset(4); return o == 0 ? Contacts.Address(rawValue: 0)! : Contacts.Address(rawValue: _accessor.readBuffer(of: UInt8.self, at: o)) ?? Contacts.Address(rawValue: 0)! }
+    public func mutate(mainAddressType: Contacts.Address) -> Bool {let o = _accessor.offset(4);  return _accessor.mutate(mainAddressType.rawValue, index: o) }
+    public func mainAddress<T: FlatBufferObject>(type: T.Type) -> T? { let o = _accessor.offset(6); return o == 0 ? nil : _accessor.union(o) }
+    public var otherAddressesTypeCount: Int32 { let o = _accessor.offset(8); return o == 0 ? 0 : _accessor.vector(count: o) }
+    public func otherAddressesType(at index: Int32) -> Contacts.Address? { let o = _accessor.offset(8); return o == 0 ? Contacts.Address(rawValue: 0)! : Contacts.Address(rawValue: _accessor.directRead(of: UInt8.self, offset: _accessor.vector(at: o) + index * 1)) }
+    public var otherAddressesCount: Int32 { let o = _accessor.offset(10); return o == 0 ? 0 : _accessor.vector(count: o) }
+    public func otherAddresses<T: FlatBufferObject>(at index: Int32, type: T.Type) -> T? { let o = _accessor.offset(10); return o == 0 ? nil : _accessor.directUnion(_accessor.vector(at: o) + index * 4) }
+    public static func startPerson(_ fbb: FlatBufferBuilder) -> UOffset { fbb.startTable(with: 4) }
+    public static func add(mainAddressType: Contacts.Address, _ fbb: FlatBufferBuilder) { fbb.add(element: mainAddressType.rawValue, def: 0, at: 0) }
+    public static func add(mainAddress: Offset<UOffset>, _ fbb: FlatBufferBuilder) { fbb.add(offset: mainAddress, at: 1)  }
+    public static func add(otherAddressesType: Offset<UOffset>, _ fbb: FlatBufferBuilder) { fbb.add(offset: otherAddressesType, at: 2)  }
+    public static func add(otherAddresses: Offset<UOffset>, _ fbb: FlatBufferBuilder) { fbb.add(offset: otherAddresses, at: 3)  }
+    public static func endPerson(_ fbb: FlatBufferBuilder, start: UOffset) -> Offset<UOffset> { let end = Offset<UOffset>(offset: fbb.endTable(at: start)); return end }
+}
+
+}
+
+// MARK: - Contacts
+
+

@@ -110,10 +110,24 @@ public final class ByteBuffer {
     /// - Parameter len: length of the string
     func push(string str: String, len: Int) {
         ensureSpace(size: UInt8(len))
-        let utf8View = str.utf8
-        for c in utf8View.lazy.reversed() {
-            push(value: c, len: 1)
+        if str.utf8.withContiguousStorageIfAvailable({ self.push(bytes: $0, len: len) }) != nil {
+        } else {
+            let utf8View = str.utf8
+            for c in utf8View.lazy.reversed() {
+                push(value: c, len: 1)
+            }
         }
+    }
+    
+    /// Writes a string to Bytebuffer using UTF8View
+    /// - Parameters:
+    ///   - bytes: Pointer to the view
+    ///   - len: Size of string
+    private func push(bytes: UnsafeBufferPointer<String.UTF8View.Element>, len: Int) -> Bool {
+        _memory.advanced(by: writerIndex - len).copyMemory(from:
+            UnsafeRawPointer(bytes.baseAddress!), byteCount: len)
+        _writerSize += len
+        return true
     }
     
     /// Write stores an object into the buffer directly or indirectly.
