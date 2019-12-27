@@ -201,6 +201,9 @@ public final class ByteBuffer {
     public func read<T>(def: T.Type, position: Int) -> T {
         let size = MemoryLayout<T>.size
         let r = UnsafeMutableRawPointer.allocate(byteCount: size, alignment: size)
+        defer {
+            r.deallocate()
+        }
         r.copyMemory(from: _memory.advanced(by: position), byteCount: size)
         return r.load(as: T.self)
     }
